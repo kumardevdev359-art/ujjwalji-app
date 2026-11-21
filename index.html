@@ -1,0 +1,2119 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UJJWALJI — Purity Is Our Identity | Business Management</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- html2canvas for Image Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Firebase Compat SDKs (App & Realtime Database) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Hind', 'Inter', sans-serif; background-color: #f1f5f9; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .invoice-print-area { background: #ffffff; color: #0f172a; }
+        @media print {
+            body * { visibility: hidden; }
+            #printableInvoice, #printableInvoice * { visibility: visible; }
+            #printableInvoice { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Top Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md border-b-2 border-amber-500">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div id="appLogoHeader" class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center font-bold text-slate-900 overflow-hidden border-2 border-amber-300">
+                    <i class="fa-solid font-bold text-lg">U</i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+                        <span>UJJWALJI</span>
+                        <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full font-normal">
+                            UDYAM-UP-06-0025629
+                        </span>
+                    </h1>
+                    <p class="text-xs text-amber-400 italic">Purity Is Our Identity</p>
+                </div>
+            </div>
+
+            <!-- Header Right: Cloud Sync Status Pill & Clock -->
+            <div class="flex items-center space-x-3">
+                <div id="syncStatusPill" onclick="switchTab('settings')" class="cursor-pointer text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-800 text-amber-400 border border-slate-700 flex items-center gap-1.5 hover:bg-slate-700 transition">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="syncStatusText">🟡 Local Only</span>
+                </div>
+                <button onclick="toggleMobileMenu()" class="md:hidden text-slate-300 hover:text-white p-2">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Bar -->
+        <nav id="navBar" class="bg-slate-800 border-t border-slate-700 hidden md:block">
+            <div class="max-w-7xl mx-auto px-2 flex flex-wrap gap-1 text-sm font-medium">
+                <button onclick="switchTab('dashboard')" class="nav-btn px-4 py-2.5 text-amber-400 border-b-2 border-amber-400 flex items-center gap-2 hover:bg-slate-700/50 transition" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i> डैशबोर्ड
+                </button>
+                <button onclick="switchTab('new-bill')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="new-bill">
+                    <i class="fa-solid fa-file-invoice-dollar text-emerald-400"></i> नया बिल
+                </button>
+                <button onclick="switchTab('customers')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="customers">
+                    <i class="fa-solid fa-users text-blue-400"></i> ग्राहक (60-Hanger)
+                </button>
+                <button onclick="switchTab('stock')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="stock">
+                    <i class="fa-solid fa-boxes-stacked text-purple-400"></i> स्टॉक व आइटम
+                </button>
+                <button onclick="switchTab('purchases')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="purchases">
+                    <i class="fa-solid fa-truck-field text-amber-400"></i> खरीद व सप्लायर
+                </button>
+                <button onclick="switchTab('production')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="production">
+                    <i class="fa-solid fa-industry text-indigo-400"></i> दैनिक उत्पादन
+                </button>
+                <button onclick="switchTab('labour')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="labour">
+                    <i class="fa-solid fa-clipboard-user text-rose-400"></i> मजदूर व हाजिरी
+                </button>
+                <button onclick="switchTab('history')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="history">
+                    <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i> बिल इतिहास
+                </button>
+                <button onclick="switchTab('settings')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="settings">
+                    <i class="fa-solid fa-gear text-slate-400"></i> सेटिंग्स व क्लाउड
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-1">
+
+        <!-- DASHBOARD TAB -->
+        <div id="tab-dashboard" class="tab-content active space-y-6">
+            <!-- Key Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-500 uppercase">आज की बिक्री</div>
+                    <div id="statTodaySales" class="text-2xl font-black text-slate-900 mt-1">₹0</div>
+                    <div class="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-trend-up"></i> आज का कुल कैश/UPI
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-500 uppercase">कुल बकाया (Dues)</div>
+                    <div id="statTotalDues" class="text-2xl font-black text-rose-600 mt-1">₹0</div>
+                    <div class="text-xs text-rose-500 mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> ग्राहकों से लेना
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-500 uppercase">कुल ग्राहक</div>
+                    <div id="statTotalCustomers" class="text-2xl font-black text-blue-600 mt-1">0</div>
+                    <div class="text-xs text-blue-500 mt-1">60-Hanger स्कीम वाले</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-500 uppercase">स्टॉक वैल्यू (अनुमानित)</div>
+                    <div id="statStockValue" class="text-2xl font-black text-purple-600 mt-1">₹0</div>
+                    <div class="text-xs text-purple-500 mt-1">गोदाम में माल</div>
+                </div>
+            </div>
+
+            <!-- Quick Action Bar & Low Stock Warning -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-amber-500"></i> त्वरित कार्य (Quick Actions)
+                    </h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <button onclick="switchTab('new-bill')" class="p-3 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200 hover:bg-emerald-100 flex flex-col items-center justify-center font-semibold text-sm">
+                            <i class="fa-solid fa-circle-plus text-xl mb-1"></i> नया बिल बनाएँ
+                        </button>
+                        <button onclick="switchTab('customers')" class="p-3 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100 flex flex-col items-center justify-center font-semibold text-sm">
+                            <i class="fa-solid fa-user-plus text-xl mb-1"></i> नया ग्राहक जोड़ें
+                        </button>
+                        <button onclick="switchTab('production')" class="p-3 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-200 hover:bg-indigo-100 flex flex-col items-center justify-center font-semibold text-sm">
+                            <i class="fa-solid fa-square-plus text-xl mb-1"></i> उत्पादन दर्ज करें
+                        </button>
+                        <button onclick="switchTab('labour')" class="p-3 bg-rose-50 text-rose-700 rounded-lg border border-rose-200 hover:bg-rose-100 flex flex-col items-center justify-center font-semibold text-sm">
+                            <i class="fa-solid fa-user-check text-xl mb-1"></i> आज की हाजिरी
+                        </button>
+                    </div>
+
+                    <!-- Recent Bills Widget -->
+                    <div class="pt-4 border-t border-slate-100">
+                        <h4 class="font-bold text-sm text-slate-700 mb-3 flex items-center justify-between">
+                            <span>हाल के बिल (Recent Bills)</span>
+                            <button onclick="switchTab('history')" class="text-xs text-amber-600 hover:underline">सभी देखें &rarr;</button>
+                        </h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-slate-100 text-slate-600 font-semibold">
+                                    <tr>
+                                        <th class="p-2">बिल #</th>
+                                        <th class="p-2">ग्राहक</th>
+                                        <th class="p-2">रकम</th>
+                                        <th class="p-2">भुगतान</th>
+                                        <th class="p-2">एक्शन</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentBillsTbody">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Low Stock Alert Box -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2 mb-3">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-500"></i> कम स्टॉक चेतावनी
+                        </h3>
+                        <div id="lowStockList" class="space-y-2 text-sm max-h-64 overflow-y-auto pr-1">
+                            <!-- Dynamic -->
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
+                        सप्लायर से माल मँगवाने के लिए 'खरीद व सप्लायर' टैब का प्रयोग करें।
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW BILL TAB -->
+        <div id="tab-new-bill" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-200">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice text-emerald-600"></i> नया बिल / इनवॉइस बनाएँ
+                    </h2>
+                    <!-- Customer Mode Switcher -->
+                    <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
+                        <button id="btnCustomerModeSaved" onclick="setBillingCustomerMode('saved')" class="px-3 py-1.5 rounded-md bg-white text-slate-900 shadow-sm">
+                            👤 सेव किया ग्राहक
+                        </button>
+                        <button id="btnCustomerModeDirect" onclick="setBillingCustomerMode('direct')" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900">
+                            ⚡ डायरेक्ट / नकद ग्राहक
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Customer Details Section -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <!-- Saved Customer Search Mode -->
+                    <div id="sectionSavedCustomer" class="md:col-span-1 space-y-2">
+                        <label class="text-xs font-bold text-slate-700">ग्राहक खोजें (नाम / फोन / एरियां)</label>
+                        <div class="relative">
+                            <input type="text" id="billCustomerSearchInput" oninput="searchCustomerForBill(this.value)" placeholder="टाइप करें..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                            <div id="billCustomerSearchResults" class="absolute z-20 top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto hidden"></div>
+                        </div>
+                        <div id="selectedCustomerBadge" class="hidden p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs">
+                            <div class="font-bold text-emerald-800" id="selCustName">--</div>
+                            <div class="text-slate-600" id="selCustPhone">--</div>
+                            <div class="text-slate-500 italic" id="selCustArea">--</div>
+                        </div>
+                    </div>
+
+                    <!-- Direct Customer Input Mode -->
+                    <div id="sectionDirectCustomer" class="hidden md:col-span-1 space-y-2">
+                        <label class="text-xs font-bold text-slate-700">डायरेक्ट ग्राहक का नाम</label>
+                        <input type="text" id="billDirectName" placeholder="जैसे: राम शर्मा (नकद)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                        <input type="tel" id="billDirectPhone" placeholder="मोबाइल नंबर (ऐच्छिक)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                    </div>
+
+                    <!-- Area Name & Code (100% Editable + GPS Button) -->
+                    <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 flex justify-between items-center">
+                                <span>एरियां नाम (Area Name)</span>
+                                <button onclick="fetchGPSLocation()" type="button" class="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                                    <i class="fa-solid fa-location-crosshairs"></i> GPS भरें
+                                </button>
+                            </label>
+                            <input type="text" id="billAreaName" placeholder="जैसे: मेन मार्केट" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-700">एरियां कोड / लैंडमार्क</label>
+                            <input type="text" id="billAreaCode" placeholder="जैसे: AR-101 / Landmark" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Items Table -->
+                <div class="mt-6">
+                    <h3 class="font-bold text-sm text-slate-800 mb-2">सामान / आइटम जोड़ें</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div class="sm:col-span-5">
+                            <select id="billItemSelect" onchange="onBillItemChange()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                                <option value="">-- आइटम चुनें --</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <input type="number" id="billItemQty" value="1" min="1" placeholder="मात्रा (Qty)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <input type="number" id="billItemRate" placeholder="दर (Rate ₹)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button onclick="addBillItemRow()" type="button" class="w-full py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700">
+                                <i class="fa-solid fa-plus"></i> जोड़ें
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Items Cart Table -->
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-100 text-slate-700 font-semibold">
+                                <tr>
+                                    <th class="p-2.5">विवरण (Item)</th>
+                                    <th class="p-2.5 text-center">मात्रा</th>
+                                    <th class="p-2.5 text-right">दर (₹)</th>
+                                    <th class="p-2.5 text-right">कुल (₹)</th>
+                                    <th class="p-2.5 text-center">हटाएँ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billItemsCartTbody">
+                                <tr><td colspan="5" class="p-4 text-center text-slate-400">कोई आइटम नहीं जोड़ा गया।</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Calculation & Discount & Payment Mode -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200">
+                    <div class="space-y-4">
+                        <!-- Hanger Movement Tracker for Bill -->
+                        <div class="bg-amber-50 p-3 rounded-lg border border-amber-200 space-y-2">
+                            <div class="font-bold text-xs text-amber-900 flex items-center gap-1">
+                                <i class="fa-solid fa-shirt"></i> हंगर लेन-देन (Hanger Scheme)
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                    <label class="block text-slate-600">दिए गए हंगर (+)</label>
+                                    <input type="number" id="billHangersGiven" value="0" min="0" class="w-full p-1.5 border border-amber-300 rounded">
+                                </div>
+                                <div>
+                                    <label class="block text-slate-600">वापस मिले हंगर (-)</label>
+                                    <input type="number" id="billHangersReturned" value="0" min="0" class="w-full p-1.5 border border-amber-300 rounded">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes & Payment Method -->
+                        <div>
+                            <label class="text-xs font-bold text-slate-700">भुगतान का तरीका (Payment Mode)</label>
+                            <select id="billPaymentMode" onchange="calculateBillTotals()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                                <option value="Cash">💵 नकद (Cash)</option>
+                                <option value="UPI">📱 ऑनलाइन UPI / QR</option>
+                                <option value="Due">⏳ उधार (Dues/Credit)</option>
+                                <option value="Partial">⚖️ आंशिक भुगतान (Partial Cash/UPI)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Totals & Discount Options -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-600">उप-कुल (Subtotal):</span>
+                            <span font-semibold id="billSubtotal">₹0.00</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm gap-2">
+                            <span class="text-slate-600">छूट (Discount):</span>
+                            <div class="flex items-center gap-1 max-w-[180px]">
+                                <input type="number" id="billDiscountValue" oninput="calculateBillTotals()" value="0" min="0" class="w-20 px-2 py-1 text-sm border border-slate-300 rounded">
+                                <select id="billDiscountType" onchange="calculateBillTotals()" class="text-xs p-1 border border-slate-300 rounded bg-white">
+                                    <option value="flat">₹</option>
+                                    <option value="percent">%</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-sm text-slate-600">
+                            <span>छूट रकम:</span>
+                            <span id="billDiscountAmount" class="text-rose-600">-₹0.00</span>
+                        </div>
+                        <div class="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-300">
+                            <span>कुल देय (Total Payable):</span>
+                            <span id="billFinalTotal" class="text-emerald-700 text-xl">₹0.00</span>
+                        </div>
+                        <div id="billPaidInputContainer" class="hidden flex justify-between items-center text-sm pt-1">
+                            <span class="text-slate-700 font-semibold">प्राप्त राशि (Paid ₹):</span>
+                            <input type="number" id="billPaidAmount" oninput="calculateBillTotals()" value="0" class="w-28 px-2 py-1 border border-emerald-400 rounded text-right font-bold">
+                        </div>
+
+                        <button onclick="generateAndSaveBill()" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl shadow hover:bg-emerald-700 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check-circle text-lg"></i> बिल सेव करें और इनवॉइस निकालें
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUSTOMERS & 60-HANGER TRACKER TAB -->
+        <div id="tab-customers" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-users text-blue-600"></i> ग्राहक सूची व 60-Hanger स्कीम ट्रैकर
+                    </h2>
+                    <button onclick="openCustomerModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-plus"></i> नया ग्राहक जोड़ें
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <input type="text" id="customerSearchInput" oninput="renderCustomerList()" placeholder="ग्राहक नाम, मोबाइल नंबर या एरियां से खोजें..." class="w-full px-4 py-2 text-sm border border-slate-300 rounded-lg">
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold">
+                            <tr>
+                                <th class="p-3">ग्राहक का नाम</th>
+                                <th class="p-3">मोबाइल</th>
+                                <th class="p-3">एरियां / कोड</th>
+                                <th class="p-3 text-center">60-Hanger प्रगति</th>
+                                <th class="p-3 text-right">उधार बकाया (Dues)</th>
+                                <th class="p-3 text-center">एक्शन</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTbody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- STOCK & PRODUCTS TAB -->
+        <div id="tab-stock" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-stacked text-purple-600"></i> स्टॉक इन्वेंट्री व रेट लॉक
+                    </h2>
+                    <button onclick="openProductModal()" class="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold text-sm hover:bg-purple-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus"></i> नया आइटम जोड़ें
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold">
+                            <tr>
+                                <th class="p-3">आइटम का नाम</th>
+                                <th class="p-3 text-right">ऐप दर (Sale ₹)</th>
+                                <th class="p-3 text-right">WhatsApp लॉक दर (₹)</th>
+                                <th class="p-3 text-center">मौजूदा स्टॉक</th>
+                                <th class="p-3 text-center">स्टॉक चेतावनी सीमा</th>
+                                <th class="p-3 text-center">एक्शन</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTbody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PURCHASES & SUPPLIER TAB -->
+        <div id="tab-purchases" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-truck-field text-amber-600"></i> सप्लायर खरीद व बिल अपलोड
+                    </h2>
+                    <button onclick="openPurchaseModal()" class="px-4 py-2 bg-amber-600 text-white rounded-lg font-semibold text-sm hover:bg-amber-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-cart-plus"></i> नई खरीद दर्ज करें
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold">
+                            <tr>
+                                <th class="p-3">तारीख</th>
+                                <th class="p-3">सप्लायर का नाम</th>
+                                <th class="p-3">आइटम</th>
+                                <th class="p-3 text-center">मात्रा</th>
+                                <th class="p-3 text-right">कुल बिल (₹)</th>
+                                <th class="p-3 text-center">बिल फोटो</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchasesTbody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- DAILY PRODUCTION TAB -->
+        <div id="tab-production" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-industry text-indigo-600"></i> दैनिक उत्पादन एंट्री (Live Stock Auto-Update)
+                </h2>
+
+                <form id="productionForm" onsubmit="saveProduction(event)" class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">तारीख</label>
+                        <input type="date" id="prodDate" required class="w-full p-2 text-sm border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">उत्पादित आइटम चुनें</label>
+                        <select id="prodProductId" required class="w-full p-2 text-sm border border-slate-300 rounded-lg">
+                            <option value="">-- चुनें --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">उत्पादित मात्रा (Qty)</label>
+                        <input type="number" id="prodQty" min="1" required placeholder="जैसे: 50" class="w-full p-2 text-sm border border-slate-300 rounded-lg">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full py-2 bg-indigo-600 text-white font-bold rounded-lg text-sm hover:bg-indigo-700">
+                            <i class="fa-solid fa-plus-circle"></i> उत्पादन सेव करें
+                        </button>
+                    </div>
+                </form>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold">
+                            <tr>
+                                <th class="p-3">तारीख</th>
+                                <th class="p-3">आइटम का नाम</th>
+                                <th class="p-3 text-center">जोड़ी गई मात्रा</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productionTbody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- LABOUR ATTENDANCE & PAYROLL TAB -->
+        <div id="tab-labour" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-user text-rose-600"></i> मजदूर हाजिरी व एडवांस पेरोल
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="openWorkerModal()" class="px-3 py-1.5 bg-rose-600 text-white rounded-lg font-semibold text-xs hover:bg-rose-700">
+                            <i class="fa-solid fa-user-plus"></i> नया मजदूर जोड़ें
+                        </button>
+                        <button onclick="markAllAttendance('P')" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-semibold text-xs hover:bg-emerald-700">
+                            ✓ सभी उपस्थित (Present)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <label class="text-xs font-bold text-slate-700">हाजिरी तारीख:</label>
+                    <input type="date" id="attendanceDate" onchange="renderAttendanceTable()" class="p-1.5 text-sm border border-slate-300 rounded-lg">
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold">
+                            <tr>
+                                <th class="p-3">मजदूर का नाम</th>
+                                <th class="p-3 text-right">दैनिक दिहाड़ी (₹)</th>
+                                <th class="p-3 text-center">आज की हाजिरी</th>
+                                <th class="p-3 text-right">कुल एडवांस दिया</th>
+                                <th class="p-3 text-center">एडवांस भुगतान</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTbody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- BILL HISTORY TAB -->
+        <div id="tab-history" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-cyan-600"></i> सभी बिलों का इतिहास
+                </h2>
+                <input type="text" id="historySearchInput" oninput="renderBillHistory()" placeholder="बिल नंबर या ग्राहक नाम से खोजें..." class="w-full px-4 py-2 text-sm border border-slate-300 rounded-lg">
+
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold">
+                            <tr>
+                                <th class="p-3">बिल #</th>
+                                <th class="p-3">तारीख</th>
+                                <th class="p-3">ग्राहक</th>
+                                <th class="p-3 text-right">कुल रकम (₹)</th>
+                                <th class="p-3 text-center">भुगतान स्टेटस</th>
+                                <th class="p-3 text-center">एक्शन</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTbody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS & FIREBASE CLOUD SYNC TAB -->
+        <div id="tab-settings" class="tab-content space-y-6">
+            
+            <!-- FIREBASE REALTIME DATABASE SYNC SECTION -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> Firebase रियल-टाइम डेटाबेस (Cloud Sync)
+                    </h2>
+                    <span id="syncBadgeInSettings" class="text-xs px-2.5 py-1 rounded-full bg-slate-100 font-bold text-slate-600">
+                        कनेक्ट नहीं है
+                    </span>
+                </div>
+
+                <p class="text-xs text-slate-600">
+                    अपने Firebase Realtime Database का URL डालें। इससे आपके सभी मोबाइल फोन और लैपटॉप पर एक ही बिज़नेस डेटा तुरंत लाइव सिंक होगा।
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Firebase Realtime Database URL</label>
+                        <input type="url" id="fbDbUrl" placeholder="https://your-project-default-rtdb.firebaseio.com" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">बिज़नेस सिंक कोड (Sync Room ID)</label>
+                        <input type="text" id="fbRoomId" value="ujjwalji_main" placeholder="ujjwalji_main" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg font-mono">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Firebase Config JSON (Optional / Full Config)</label>
+                        <textarea id="fbConfigJson" rows="2" placeholder='{"apiKey": "...", "databaseURL": "...", "projectId": "..."}' class="w-full p-2.5 text-xs font-mono border border-slate-300 rounded-lg"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 pt-2">
+                    <button onclick="connectFirebaseSync()" class="px-4 py-2 bg-amber-600 text-white font-bold rounded-lg text-sm hover:bg-amber-700 shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-plug"></i> कनेक्ट और लाइव सिंक चालू करें
+                    </button>
+                    <button onclick="pushToCloudManual()" class="px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg text-sm hover:bg-emerald-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> क्लाउड पर भेजें (Push Now)
+                    </button>
+                    <button onclick="pullFromCloudManual()" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg text-sm hover:bg-blue-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> क्लाउड से लाएँ (Pull Now)
+                    </button>
+                    <button onclick="disconnectFirebaseSync()" class="px-4 py-2 bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm hover:bg-slate-300">
+                        डिस्कनेक्ट करें
+                    </button>
+                </div>
+            </div>
+
+            <!-- Business Settings & UPI QR Setup -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+                <h2 class="text-lg font-bold text-slate-900 border-b border-slate-200 pb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-slate-600"></i> बिज़नेस प्रोफ़ाइल व UPI QR कोड
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">फर्म / बिज़नेस का नाम</label>
+                            <input type="text" id="setBusinessName" value="UJJWALJI Enterprise" class="w-full p-2 text-sm border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">UDYAM रजिस्ट्रेशन नंबर</label>
+                            <input type="text" id="setUdyamNo" value="UDYAM-UP-06-0025629" class="w-full p-2 text-sm border border-slate-300 rounded-lg font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">मालिक का नाम / फोन</label>
+                            <input type="text" id="setOwnerPhone" value="Ujjwal Ji | 9876543210" class="w-full p-2 text-sm border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">UPI ID (QR पेमेंट प्राप्ति के लिए)</label>
+                            <input type="text" id="setUpiId" oninput="updateSettingsQRPreview()" value="ujjwalji@upi" class="w-full p-2 text-sm border border-slate-300 rounded-lg font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">बिज़नेस लोगो (Compresses Automatically)</label>
+                            <input type="file" id="setLogoFile" accept="image/*" onchange="handleLogoUpload(event)" class="w-full text-xs text-slate-500">
+                        </div>
+                    </div>
+
+                    <!-- UPI Live Preview Box -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center justify-center space-y-3 text-center">
+                        <span class="text-xs font-bold text-slate-600">UPI QR कोड लाइव पूर्वावलोकन</span>
+                        <div id="settingsQrPreview" class="p-2 bg-white rounded-lg border border-slate-300"></div>
+                        <span id="settingsQrUpiText" class="text-xs font-mono text-slate-700">ujjwalji@upi</span>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 flex justify-end">
+                    <button onclick="saveSettings()" class="px-6 py-2.5 bg-slate-900 text-amber-400 font-bold rounded-xl hover:bg-slate-800">
+                        <i class="fa-solid fa-floppy-disk"></i> सेटिंग्स सेव करें
+                    </button>
+                </div>
+            </div>
+
+            <!-- JSON Backup & Restore -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-database text-blue-600"></i> बैकअप और रिस्टोर (Offline JSON)
+                </h2>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="exportJSONBackup()" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg text-sm hover:bg-blue-700">
+                        <i class="fa-solid fa-download"></i> JSON बैकअप डाउनलोड करें
+                    </button>
+                    <label class="px-4 py-2 bg-slate-100 border border-slate-300 text-slate-700 font-semibold rounded-lg text-sm hover:bg-slate-200 cursor-pointer">
+                        <i class="fa-solid fa-upload"></i> JSON बैकअप अपलोड करें
+                        <input type="file" accept=".json" onchange="importJSONBackup(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Containers -->
+    <!-- Customer Modal -->
+    <div id="modalCustomer" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-900">नया ग्राहक जोड़ें</h3>
+                <button onclick="closeModal('modalCustomer')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="saveCustomerForm(event)" class="space-y-3 text-sm">
+                <input type="hidden" id="custFormId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ग्राहक का पूरा नाम</label>
+                    <input type="text" id="custFormName" required class="w-full p-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">मोबाइल नंबर</label>
+                    <input type="tel" id="custFormPhone" required class="w-full p-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">एरियां / लोकेशन कोड</label>
+                    <input type="text" id="custFormArea" placeholder="जैसे: Main Market / Area-1" class="w-full p-2 border rounded-lg">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modalCustomer')" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg">रद्द करें</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg">सेव करें</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="modalProduct" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-900">आइटम / प्रोडक्ट जोड़ें</h3>
+                <button onclick="closeModal('modalProduct')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="saveProductForm(event)" class="space-y-3 text-sm">
+                <input type="hidden" id="prodFormId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">आइटम का नाम</label>
+                    <input type="text" id="prodFormName" required class="w-full p-2 border rounded-lg">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">ऐप बिक्री दर (₹)</label>
+                        <input type="number" id="prodFormRate" required min="0" class="w-full p-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">WhatsApp लॉक दर (₹)</label>
+                        <input type="number" id="prodFormWaRate" min="0" class="w-full p-2 border rounded-lg">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">प्रारंभिक स्टॉक</label>
+                        <input type="number" id="prodFormStock" required min="0" class="w-full p-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">कम स्टॉक सीमा</label>
+                        <input type="number" id="prodFormMinStock" value="10" min="1" class="w-full p-2 border rounded-lg">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modalProduct')" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg">रद्द करें</button>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white font-bold rounded-lg">सेव करें</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Purchase Modal -->
+    <div id="modalPurchase" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-900">सप्लायर से खरीद दर्ज करें</h3>
+                <button onclick="closeModal('modalPurchase')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="savePurchaseForm(event)" class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">सप्लायर का नाम</label>
+                    <input type="text" id="purchSupplier" required class="w-full p-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">खरीदा गया आइटम</label>
+                    <select id="purchProductId" required class="w-full p-2 border rounded-lg">
+                        <!-- Dynamic -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">मात्रा (Qty)</label>
+                        <input type="number" id="purchQty" min="1" required class="w-full p-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">कुल बिल रकम (₹)</label>
+                        <input type="number" id="purchTotal" min="0" required class="w-full p-2 border rounded-lg">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">सप्लायर बिल फोटो अपलोड</label>
+                    <input type="file" id="purchBillPhoto" accept="image/*" class="w-full text-xs text-slate-500">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modalPurchase')" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg">रद्द करें</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 text-white font-bold rounded-lg">सेव करें</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Worker Modal -->
+    <div id="modalWorker" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-900">नया मजदूर जोड़ें</h3>
+                <button onclick="closeModal('modalWorker')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="saveWorkerForm(event)" class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">मजदूर का नाम</label>
+                    <input type="text" id="workerName" required class="w-full p-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">दैनिक दिहाड़ी (Daily Wage ₹)</label>
+                    <input type="number" id="workerWage" required min="0" class="w-full p-2 border rounded-lg">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modalWorker')" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg">रद्द करें</button>
+                    <button type="submit" class="px-4 py-2 bg-rose-600 text-white font-bold rounded-lg">सेव करें</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Invoice Viewer & Printable Modal -->
+    <div id="modalInvoice" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
+        <div class="bg-white max-w-xl w-full rounded-2xl shadow-2xl overflow-hidden my-8">
+            <!-- Modal Action Top Bar -->
+            <div class="bg-slate-900 p-3 px-4 flex justify-between items-center text-white">
+                <span class="font-bold text-sm">इनवॉइस पूर्वावलोकन</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="shareInvoiceWhatsApp()" class="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700 flex items-center gap-1">
+                        <i class="fa-brands fa-whatsapp"></i> वॉट्सऐप
+                    </button>
+                    <button onclick="downloadInvoicePNG()" class="px-3 py-1 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700 flex items-center gap-1">
+                        <i class="fa-solid fa-download"></i> PNG
+                    </button>
+                    <button onclick="window.print()" class="px-3 py-1 bg-amber-500 text-slate-900 rounded text-xs font-bold hover:bg-amber-400 flex items-center gap-1">
+                        <i class="fa-solid fa-print"></i> प्रिंट
+                    </button>
+                    <button onclick="closeModal('modalInvoice')" class="text-slate-400 hover:text-white ml-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+            </div>
+
+            <!-- Printable Invoice Content -->
+            <div id="printableInvoice" class="p-6 space-y-4 bg-white text-slate-800">
+                <!-- Header -->
+                <div class="flex justify-between items-start border-b border-slate-300 pb-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight" id="invBizName">UJJWALJI Enterprise</h2>
+                        <p class="text-xs text-amber-600 font-semibold" id="invTagline">Purity Is Our Identity</p>
+                        <p class="text-xs text-slate-500 font-mono mt-0.5" id="invUdyam">UDYAM-UP-06-0025629</p>
+                        <p class="text-xs text-slate-600 mt-1" id="invBizPhone">9876543210</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block text-xs font-bold px-3 py-1 bg-slate-900 text-amber-400 rounded-full mb-1">TAX INVOICE</span>
+                        <div class="text-xs font-mono font-bold text-slate-700" id="invBillNo">#BILL-1001</div>
+                        <div class="text-xs text-slate-500" id="invDate">Date: 2026-01-01</div>
+                    </div>
+                </div>
+
+                <!-- Customer Details -->
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs grid grid-cols-2 gap-2">
+                    <div>
+                        <span class="text-slate-500">ग्राहक (Customer):</span>
+                        <div class="font-bold text-slate-900 text-sm" id="invCustName">--</div>
+                        <div class="text-slate-600" id="invCustPhone">--</div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-slate-500">एरियां & कोड:</span>
+                        <div class="font-bold text-slate-800" id="invCustArea">--</div>
+                        <div class="text-slate-500" id="invCustAreaCode">--</div>
+                    </div>
+                </div>
+
+                <!-- Itemized Table -->
+                <table class="w-full text-xs text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-800 text-white font-bold">
+                            <th class="p-2">विवरण</th>
+                            <th class="p-2 text-center">मात्रा</th>
+                            <th class="p-2 text-right">दर (₹)</th>
+                            <th class="p-2 text-right">कुल (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invItemsTbody" class="divide-y divide-slate-200">
+                        <!-- Dynamic -->
+                    </tbody>
+                </table>
+
+                <!-- Summary & Payment QR -->
+                <div class="flex justify-between items-end pt-3 border-t border-slate-300">
+                    <div class="flex flex-col items-center text-center">
+                        <div id="invQrCode" class="p-1 bg-white border border-slate-300 rounded mb-1"></div>
+                        <span class="text-[10px] text-slate-500 font-mono">Scan to Pay via UPI</span>
+                    </div>
+                    <div class="space-y-1 text-xs w-48 text-right">
+                        <div class="flex justify-between"><span class="text-slate-600">उप-कुल:</span><span font-semibold id="invSubtotal">₹0</span></div>
+                        <div class="flex justify-between"><span class="text-slate-600">छूट:</span><span id="invDiscount">-₹0</span></div>
+                        <div class="flex justify-between font-bold text-sm text-slate-900 pt-1 border-t"><span class="text-slate-900">कुल राशि:</span><span id="invTotal" class="text-emerald-700">₹0</span></div>
+                        <div class="flex justify-between text-slate-600"><span>भुगतान मोड:</span><span id="invPayMode">Cash</span></div>
+                    </div>
+                </div>
+
+                <!-- Footer Tagline -->
+                <div class="text-center pt-3 border-t border-slate-200">
+                    <p class="text-xs font-bold text-slate-800">UJJWALJI — Purity Is Our Identity</p>
+                    <p class="text-[10px] text-slate-500">आपके व्यवसाय एवं सहयोग का धन्यवाद!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP JAVASCRIPT LOGIC -->
+    <script>
+        // Global App State Object
+        const STORAGE_KEY = 'ujjwalji_db';
+        let dbData = {
+            settings: {
+                businessName: "UJJWALJI Enterprise",
+                ownerName: "Ujjwal Ji",
+                phone: "9876543210",
+                address: "Main Market, Industrial Area",
+                udyamNo: "UDYAM-UP-06-0025629",
+                tagline: "Purity Is Our Identity",
+                upiId: "ujjwalji@upi",
+                logo: "",
+                firebaseUrl: "",
+                firebaseConfig: "",
+                syncRoomId: "ujjwalji_main",
+                autoSync: true
+            },
+            customers: [],
+            products: [],
+            bills: [],
+            purchases: [],
+            suppliers: [],
+            production: [],
+            workers: [],
+            attendance: [],
+            areas: ["Main Market", "Station Road", "Industrial Hub"],
+            lastUpdated: Date.now()
+        };
+
+        // Current Billing Cart State
+        let currentBillingCart = [];
+        let selectedSavedCustomer = null;
+        let billingCustomerMode = 'saved'; // 'saved' or 'direct'
+        let currentViewingBill = null;
+
+        // Firebase Sync Global References
+        let firebaseApp = null;
+        let firebaseDb = null;
+        let firebaseRef = null;
+        let isSyncingActive = false;
+
+        // Initialize App on Page Load
+        window.addEventListener('load', () => {
+            loadFromLocalStorage();
+            seedDefaultSampleData();
+            renderAll();
+            updateSettingsQRPreview();
+            initFirebaseFromSettingsIfPresent();
+        });
+
+        // Seed Sample Data if completely empty
+        function seedDefaultSampleData() {
+            if (dbData.products.length === 0) {
+                dbData.products = [
+                    { id: 'p1', name: 'शुद्ध सरसों तेल (1 Ltr)', rate: 160, waRate: 155, stock: 120, minStock: 20 },
+                    { id: 'p2', name: 'देसी घी (1 Kg)', rate: 650, waRate: 640, stock: 45, minStock: 10 },
+                    { id: 'p3', name: 'प्रीमियम आटा (10 Kg)', rate: 340, waRate: 330, stock: 8, minStock: 15 }
+                ];
+            }
+            if (dbData.customers.length === 0) {
+                dbData.customers = [
+                    { id: 'c1', name: 'रमेश कुमार', phone: '9812345678', area: 'Main Market', areaCode: 'AR-01', hangersGiven: 12, hangersReturned: 5, dues: 450 },
+                    { id: 'c2', name: 'सुनील वर्मा', phone: '9765432109', area: 'Station Road', areaCode: 'AR-02', hangersGiven: 60, hangersReturned: 60, dues: 0 }
+                ];
+            }
+            if (dbData.workers.length === 0) {
+                dbData.workers = [
+                    { id: 'w1', name: 'दीपक यादव', wage: 500, totalAdvance: 200 },
+                    { id: 'w2', name: 'मोहन लाल', wage: 600, totalAdvance: 0 }
+                ];
+            }
+            saveToLocalStorage();
+        }
+
+        // Save & Load LocalStorage
+        function saveToLocalStorage() {
+            dbData.lastUpdated = Date.now();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dbData));
+            pushDataToFirebaseIfConnected();
+        }
+
+        function loadFromLocalStorage() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    dbData = JSON.parse(raw);
+                } catch (e) {
+                    console.error('Failed to parse local storage', e);
+                }
+            }
+        }
+
+        // Navigation Tabs Engine
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById('tab-' + tabName);
+            if (target) target.classList.add('active');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.getAttribute('data-tab') === tabName) {
+                    btn.classList.add('text-amber-400', 'border-amber-400');
+                    btn.classList.remove('text-slate-300', 'border-transparent');
+                } else {
+                    btn.classList.remove('text-amber-400', 'border-amber-400');
+                    btn.classList.add('text-slate-300', 'border-transparent');
+                }
+            });
+
+            // Re-render corresponding views
+            renderAll();
+        }
+
+        function toggleMobileMenu() {
+            const nav = document.getElementById('navBar');
+            nav.classList.toggle('hidden');
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            let bg = 'bg-slate-900 text-white';
+            if (type === 'success') bg = 'bg-emerald-600 text-white';
+            if (type === 'error') bg = 'bg-rose-600 text-white';
+            if (type === 'warning') bg = 'bg-amber-500 text-slate-900 font-bold';
+
+            toast.className = `${bg} px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 pointer-events-auto transition-all transform duration-300`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Render All Dashboard & UI Components
+        function renderAll() {
+            renderDashboardStats();
+            renderNewBillOptions();
+            renderCustomerList();
+            renderProductList();
+            renderPurchasesTable();
+            renderProductionTable();
+            renderAttendanceTable();
+            renderBillHistory();
+            populateSettingsFields();
+        }
+
+        // 1. DASHBOARD RENDER
+        function renderDashboardStats() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            let todaySales = 0;
+            let totalDues = 0;
+
+            dbData.bills.forEach(b => {
+                if (b.date.startsWith(todayStr)) todaySales += (b.finalTotal || 0);
+            });
+
+            dbData.customers.forEach(c => {
+                totalDues += (c.dues || 0);
+            });
+
+            let stockVal = 0;
+            dbData.products.forEach(p => {
+                stockVal += (p.stock || 0) * (p.rate || 0);
+            });
+
+            document.getElementById('statTodaySales').innerText = '₹' + todaySales.toLocaleString('hi-IN');
+            document.getElementById('statTotalDues').innerText = '₹' + totalDues.toLocaleString('hi-IN');
+            document.getElementById('statTotalCustomers').innerText = dbData.customers.length;
+            document.getElementById('statStockValue').innerText = '₹' + stockVal.toLocaleString('hi-IN');
+
+            // Low Stock Warning List
+            const lowStockContainer = document.getElementById('lowStockList');
+            const lowStockItems = dbData.products.filter(p => p.stock <= p.minStock);
+
+            if (lowStockItems.length === 0) {
+                lowStockContainer.innerHTML = '<div class="text-xs text-emerald-600 font-semibold bg-emerald-50 p-2 rounded">✓ सभी स्टॉक पर्याप्त हैं!</div>';
+            } else {
+                lowStockContainer.innerHTML = lowStockItems.map(p => `
+                    <div class="flex justify-between items-center bg-rose-50 p-2 rounded border border-rose-100 text-xs">
+                        <span class="font-bold text-rose-900">${p.name}</span>
+                        <span class="px-2 py-0.5 bg-rose-200 text-rose-800 rounded font-bold">${p.stock} बचा</span>
+                    </div>
+                `).join('');
+            }
+
+            // Recent Bills Table
+            const recentTbody = document.getElementById('recentBillsTbody');
+            const rec = [...dbData.bills].reverse().slice(0, 5);
+            if (rec.length === 0) {
+                recentTbody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-slate-400">कोई बिल नहीं मिला।</td></tr>';
+            } else {
+                recentTbody.innerHTML = rec.map(b => `
+                    <tr class="border-b border-slate-100">
+                        <td class="p-2 font-mono font-bold text-slate-800">${b.billNo}</td>
+                        <td class="p-2">${b.custName}</td>
+                        <td class="p-2 font-bold text-emerald-700">₹${b.finalTotal}</td>
+                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.payMode==='Due'?'bg-rose-100 text-rose-700':'bg-emerald-100 text-emerald-700'}">${b.payMode}</span></td>
+                        <td class="p-2"><button onclick="viewInvoiceModal('${b.id}')" class="text-blue-600 hover:underline">देखें</button></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // 2. NEW BILLING ENGINE
+        function setBillingCustomerMode(mode) {
+            billingCustomerMode = mode;
+            const btnSaved = document.getElementById('btnCustomerModeSaved');
+            const btnDirect = document.getElementById('btnCustomerModeDirect');
+            const secSaved = document.getElementById('sectionSavedCustomer');
+            const secDirect = document.getElementById('sectionDirectCustomer');
+
+            if (mode === 'saved') {
+                btnSaved.className = 'px-3 py-1.5 rounded-md bg-white text-slate-900 shadow-sm font-bold';
+                btnDirect.className = 'px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900';
+                secSaved.classList.remove('hidden');
+                secDirect.classList.add('hidden');
+            } else {
+                btnDirect.className = 'px-3 py-1.5 rounded-md bg-white text-slate-900 shadow-sm font-bold';
+                btnSaved.className = 'px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900';
+                secDirect.classList.remove('hidden');
+                secSaved.classList.add('hidden');
+                selectedSavedCustomer = null;
+            }
+        }
+
+        function renderNewBillOptions() {
+            const select = document.getElementById('billItemSelect');
+            select.innerHTML = '<option value="">-- आइटम चुनें --</option>' + 
+                dbData.products.map(p => `<option value="${p.id}">${p.name} (स्टॉक: ${p.stock} | ₹${p.rate})</option>`).join('');
+        }
+
+        function searchCustomerForBill(query) {
+            const resBox = document.getElementById('billCustomerSearchResults');
+            if (!query.trim()) { resBox.classList.add('hidden'); return; }
+
+            const matches = dbData.customers.filter(c => 
+                c.name.toLowerCase().includes(query.toLowerCase()) || 
+                c.phone.includes(query) || 
+                (c.area && c.area.toLowerCase().includes(query.toLowerCase()))
+            );
+
+            if (matches.length === 0) {
+                resBox.innerHTML = '<div class="p-2 text-xs text-slate-400">कोई ग्राहक नहीं मिला</div>';
+            } else {
+                resBox.innerHTML = matches.map(c => `
+                    <div onclick="selectCustomerForBill('${c.id}')" class="p-2 text-xs hover:bg-slate-100 cursor-pointer border-b border-slate-100 flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-slate-800">${c.name}</span> (${c.phone})
+                            <div class="text-[10px] text-slate-500">${c.area || 'N/A'}</div>
+                        </div>
+                        <span class="text-rose-600 font-bold">Dues: ₹${c.dues || 0}</span>
+                    </div>
+                `).join('');
+            }
+            resBox.classList.remove('hidden');
+        }
+
+        function selectCustomerForBill(custId) {
+            selectedSavedCustomer = dbData.customers.find(c => c.id === custId);
+            if (selectedSavedCustomer) {
+                document.getElementById('billCustomerSearchInput').value = selectedSavedCustomer.name;
+                document.getElementById('billCustomerSearchResults').classList.add('hidden');
+                document.getElementById('selectedCustomerBadge').classList.remove('hidden');
+                document.getElementById('selCustName').innerText = selectedSavedCustomer.name;
+                document.getElementById('selCustPhone').innerText = selectedSavedCustomer.phone;
+                document.getElementById('selCustArea').innerText = selectedSavedCustomer.area || '';
+                
+                // Auto-fill area and area code if present
+                document.getElementById('billAreaName').value = selectedSavedCustomer.area || '';
+                document.getElementById('billAreaCode').value = selectedSavedCustomer.areaCode || '';
+            }
+        }
+
+        // GPS Auto-fill Location
+        function fetchGPSLocation() {
+            if ("geolocation" in navigator) {
+                showToast("GPS लोकेशन प्राप्त की जा रही है...", "info");
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    const lat = pos.coords.latitude.toFixed(4);
+                    const lng = pos.coords.longitude.toFixed(4);
+                    document.getElementById('billAreaName').value = `GPS Area (${lat}, ${lng})`;
+                    document.getElementById('billAreaCode').value = `GPS-${Math.floor(pos.coords.latitude*100)}`;
+                    showToast("GPS लोकेशन सफलतापूर्वक भरी गई!", "success");
+                }, (err) => {
+                    showToast("GPS एक्सेस नहीं मिला: " + err.message, "error");
+                });
+            } else {
+                showToast("आपकी डिवाइस में GPS समर्थित नहीं है।", "error");
+            }
+        }
+
+        function onBillItemChange() {
+            const pid = document.getElementById('billItemSelect').value;
+            const p = dbData.products.find(x => x.id === pid);
+            if (p) {
+                document.getElementById('billItemRate').value = p.rate;
+            }
+        }
+
+        function addBillItemRow() {
+            const pid = document.getElementById('billItemSelect').value;
+            const qty = parseInt(document.getElementById('billItemQty').value) || 1;
+            const rate = parseFloat(document.getElementById('billItemRate').value) || 0;
+
+            const p = dbData.products.find(x => x.id === pid);
+            if (!p) { showToast("कृपया आइटम चुनें", "warning"); return; }
+            if (qty > p.stock) { showToast(`स्टॉक में केवल ${p.stock} उपलब्ध हैं!`, "warning"); }
+
+            const existingIndex = currentBillingCart.findIndex(item => item.productId === pid);
+            if (existingIndex >= 0) {
+                currentBillingCart[existingIndex].qty += qty;
+                currentBillingCart[existingIndex].rate = rate;
+            } else {
+                currentBillingCart.push({
+                    productId: p.id,
+                    name: p.name,
+                    qty: qty,
+                    rate: rate
+                });
+            }
+
+            renderBillCartTable();
+            calculateBillTotals();
+        }
+
+        function removeBillCartItem(index) {
+            currentBillingCart.splice(index, 1);
+            renderBillCartTable();
+            calculateBillTotals();
+        }
+
+        function renderBillCartTable() {
+            const tbody = document.getElementById('billItemsCartTbody');
+            if (currentBillingCart.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">कोई आइटम नहीं जोड़ा गया।</td></tr>';
+                return;
+            }
+            tbody.innerHTML = currentBillingCart.map((item, idx) => `
+                <tr class="border-b border-slate-100">
+                    <td class="p-2.5 font-semibold text-slate-800">${item.name}</td>
+                    <td class="p-2.5 text-center font-bold">${item.qty}</td>
+                    <td class="p-2.5 text-right">₹${item.rate}</td>
+                    <td class="p-2.5 text-right font-bold text-slate-900">₹${(item.qty * item.rate).toFixed(2)}</td>
+                    <td class="p-2.5 text-center">
+                        <button onclick="removeBillCartItem(${idx})" class="text-rose-600 hover:text-rose-800"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function calculateBillTotals() {
+            let subtotal = 0;
+            currentBillingCart.forEach(i => subtotal += (i.qty * i.rate));
+
+            const discVal = parseFloat(document.getElementById('billDiscountValue').value) || 0;
+            const discType = document.getElementById('billDiscountType').value;
+            let discAmt = 0;
+
+            if (discType === 'flat') {
+                discAmt = discVal;
+            } else {
+                discAmt = (subtotal * discVal) / 100;
+            }
+
+            const finalTotal = Math.max(0, subtotal - discAmt);
+            const payMode = document.getElementById('billPaymentMode').value;
+            const paidContainer = document.getElementById('billPaidInputContainer');
+
+            if (payMode === 'Partial') {
+                paidContainer.classList.remove('hidden');
+            } else {
+                paidContainer.classList.add('hidden');
+            }
+
+            document.getElementById('billSubtotal').innerText = '₹' + subtotal.toFixed(2);
+            document.getElementById('billDiscountAmount').innerText = '-₹' + discAmt.toFixed(2);
+            document.getElementById('billFinalTotal').innerText = '₹' + finalTotal.toFixed(2);
+        }
+
+        function generateAndSaveBill() {
+            if (currentBillingCart.length === 0) {
+                showToast("कृपया कम से कम एक आइटम जोड़ें", "warning");
+                return;
+            }
+
+            let custName = "", custPhone = "";
+            if (billingCustomerMode === 'saved') {
+                if (!selectedSavedCustomer) {
+                    showToast("कृपया सूची में से ग्राहक चुनें", "warning");
+                    return;
+                }
+                custName = selectedSavedCustomer.name;
+                custPhone = selectedSavedCustomer.phone;
+            } else {
+                custName = document.getElementById('billDirectName').value.trim() || 'डायरेक्ट नकद ग्राहक';
+                custPhone = document.getElementById('billDirectPhone').value.trim() || '';
+            }
+
+            const areaName = document.getElementById('billAreaName').value.trim();
+            const areaCode = document.getElementById('billAreaCode').value.trim();
+            const payMode = document.getElementById('billPaymentMode').value;
+            const subtotal = parseFloat(document.getElementById('billSubtotal').innerText.replace('₹', '')) || 0;
+            const discountAmt = parseFloat(document.getElementById('billDiscountAmount').innerText.replace('-₹', '')) || 0;
+            const finalTotal = parseFloat(document.getElementById('billFinalTotal').innerText.replace('₹', '')) || 0;
+
+            let paidAmt = finalTotal;
+            if (payMode === 'Due') paidAmt = 0;
+            if (payMode === 'Partial') {
+                paidAmt = parseFloat(document.getElementById('billPaidAmount').value) || 0;
+            }
+            const dueAmt = Math.max(0, finalTotal - paidAmt);
+
+            // Hangers movement
+            const hangersGiven = parseInt(document.getElementById('billHangersGiven').value) || 0;
+            const hangersReturned = parseInt(document.getElementById('billHangersReturned').value) || 0;
+
+            const billNo = 'BILL-' + (1000 + dbData.bills.length + 1);
+            const newBill = {
+                id: 'b_' + Date.now(),
+                billNo: billNo,
+                date: new Date().toISOString(),
+                custName: custName,
+                custPhone: custPhone,
+                areaName: areaName,
+                areaCode: areaCode,
+                items: [...currentBillingCart],
+                subtotal: subtotal,
+                discount: discountAmt,
+                finalTotal: finalTotal,
+                paidAmount: paidAmt,
+                dueAmount: dueAmt,
+                payMode: payMode,
+                hangersGiven: hangersGiven,
+                hangersReturned: hangersReturned
+            };
+
+            // Deduct Stock
+            currentBillingCart.forEach(ci => {
+                const p = dbData.products.find(x => x.id === ci.productId);
+                if (p) p.stock = Math.max(0, p.stock - ci.qty);
+            });
+
+            // Update Saved Customer Dues and Hangers if applicable
+            if (selectedSavedCustomer) {
+                const c = dbData.customers.find(x => x.id === selectedSavedCustomer.id);
+                if (c) {
+                    c.dues = (c.dues || 0) + dueAmt;
+                    c.hangersGiven = (c.hangersGiven || 0) + hangersGiven;
+                    c.hangersReturned = (c.hangersReturned || 0) + hangersReturned;
+                }
+            }
+
+            dbData.bills.push(newBill);
+            saveToLocalStorage();
+
+            showToast("बिल सफलतापूर्वक सेव हो गया!", "success");
+
+            // Reset Billing Cart
+            currentBillingCart = [];
+            renderBillCartTable();
+            calculateBillTotals();
+
+            // Show Printable Invoice
+            viewInvoiceModal(newBill.id);
+        }
+
+        // 3. CUSTOMER MANAGEMENT & 60-HANGER TRACKER
+        function renderCustomerList() {
+            const tbody = document.getElementById('customersTbody');
+            const query = (document.getElementById('customerSearchInput')?.value || '').toLowerCase();
+
+            const list = dbData.customers.filter(c => 
+                c.name.toLowerCase().includes(query) || 
+                c.phone.includes(query) || 
+                (c.area && c.area.toLowerCase().includes(query))
+            );
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">कोई ग्राहक नहीं मिला।</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(c => {
+                const given = c.hangersGiven || 0;
+                const ret = c.hangersReturned || 0;
+                const netHangers = Math.max(0, given - ret);
+                const progressPct = Math.min(100, Math.round((netHangers / 60) * 100));
+
+                return `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="p-3 font-bold text-slate-900">${c.name}</td>
+                        <td class="p-3 text-slate-600 font-mono">${c.phone}</td>
+                        <td class="p-3 text-slate-600">${c.area || '-'} <span class="text-xs text-slate-400 font-mono">(${c.areaCode || ''})</span></td>
+                        <td class="p-3">
+                            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                                <div class="bg-amber-500 h-2.5 rounded-full" style="width: ${progressPct}%"></div>
+                            </div>
+                            <div class="text-[11px] text-slate-500 text-center mt-1">${netHangers} / 60 हंगर (${progressPct}%)</div>
+                        </td>
+                        <td class="p-3 text-right font-bold ${c.dues > 0 ? 'text-rose-600' : 'text-emerald-600'}">₹${c.dues || 0}</td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick="editCustomer('${c.id}')" class="text-blue-600 hover:text-blue-800"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="sendWhatsAppReminder('${c.phone}', '${c.name}', ${c.dues||0})" class="text-emerald-600 hover:text-emerald-800"><i class="fa-brands fa-whatsapp text-lg"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openCustomerModal(custId = null) {
+            document.getElementById('custFormId').value = custId || '';
+            document.getElementById('custFormName').value = '';
+            document.getElementById('custFormPhone').value = '';
+            document.getElementById('custFormArea').value = '';
+
+            if (custId) {
+                const c = dbData.customers.find(x => x.id === custId);
+                if (c) {
+                    document.getElementById('custFormName').value = c.name;
+                    document.getElementById('custFormPhone').value = c.phone;
+                    document.getElementById('custFormArea').value = c.area || '';
+                }
+            }
+            document.getElementById('modalCustomer').classList.remove('hidden');
+        }
+
+        function saveCustomerForm(e) {
+            e.preventDefault();
+            const id = document.getElementById('custFormId').value;
+            const name = document.getElementById('custFormName').value.trim();
+            const phone = document.getElementById('custFormPhone').value.trim();
+            const area = document.getElementById('custFormArea').value.trim();
+
+            if (id) {
+                const c = dbData.customers.find(x => x.id === id);
+                if (c) { c.name = name; c.phone = phone; c.area = area; }
+            } else {
+                dbData.customers.push({
+                    id: 'c_' + Date.now(),
+                    name: name,
+                    phone: phone,
+                    area: area,
+                    areaCode: 'AR-' + Math.floor(Math.random()*1000),
+                    hangersGiven: 0,
+                    hangersReturned: 0,
+                    dues: 0
+                });
+            }
+            saveToLocalStorage();
+            closeModal('modalCustomer');
+            renderCustomerList();
+            showToast("ग्राहक सहेजा गया!", "success");
+        }
+
+        function sendWhatsAppReminder(phone, name, dues) {
+            const msg = `नमस्ते ${name} जी! UJJWALJI Enterprise की ओर से। आपका कुल बकाया भुगतान ₹${dues} है। कृपया शीघ्र भुगतान करें। धन्यवाद! (Purity Is Our Identity)`;
+            window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // 4. STOCK & PRODUCTS
+        function renderProductList() {
+            const tbody = document.getElementById('productsTbody');
+            tbody.innerHTML = dbData.products.map(p => `
+                <tr class="border-b border-slate-100 hover:bg-slate-50">
+                    <td class="p-3 font-bold text-slate-800">${p.name}</td>
+                    <td class="p-3 text-right font-bold text-slate-900">₹${p.rate}</td>
+                    <td class="p-3 text-right font-semibold text-emerald-700">₹${p.waRate || p.rate}</td>
+                    <td class="p-3 text-center">
+                        <span class="px-2 py-1 rounded font-bold text-xs ${p.stock <= p.minStock ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-800'}">
+                            ${p.stock}
+                        </span>
+                    </td>
+                    <td class="p-3 text-center text-xs text-slate-500">${p.minStock}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="openProductModal('${p.id}')" class="text-purple-600 hover:text-purple-800"><i class="fa-solid fa-pen-to-square"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openProductModal(pid = null) {
+            document.getElementById('prodFormId').value = pid || '';
+            document.getElementById('prodFormName').value = '';
+            document.getElementById('prodFormRate').value = '';
+            document.getElementById('prodFormWaRate').value = '';
+            document.getElementById('prodFormStock').value = '';
+            document.getElementById('prodFormMinStock').value = '10';
+
+            if (pid) {
+                const p = dbData.products.find(x => x.id === pid);
+                if (p) {
+                    document.getElementById('prodFormName').value = p.name;
+                    document.getElementById('prodFormRate').value = p.rate;
+                    document.getElementById('prodFormWaRate').value = p.waRate || p.rate;
+                    document.getElementById('prodFormStock').value = p.stock;
+                    document.getElementById('prodFormMinStock').value = p.minStock || 10;
+                }
+            }
+            document.getElementById('modalProduct').classList.remove('hidden');
+        }
+
+        function saveProductForm(e) {
+            e.preventDefault();
+            const pid = document.getElementById('prodFormId').value;
+            const name = document.getElementById('prodFormName').value.trim();
+            const rate = parseFloat(document.getElementById('prodFormRate').value) || 0;
+            const waRate = parseFloat(document.getElementById('prodFormWaRate').value) || rate;
+            const stock = parseInt(document.getElementById('prodFormStock').value) || 0;
+            const minStock = parseInt(document.getElementById('prodFormMinStock').value) || 10;
+
+            if (pid) {
+                const p = dbData.products.find(x => x.id === pid);
+                if (p) { p.name = name; p.rate = rate; p.waRate = waRate; p.stock = stock; p.minStock = minStock; }
+            } else {
+                dbData.products.push({
+                    id: 'p_' + Date.now(),
+                    name: name,
+                    rate: rate,
+                    waRate: waRate,
+                    stock: stock,
+                    minStock: minStock
+                });
+            }
+            saveToLocalStorage();
+            closeModal('modalProduct');
+            renderProductList();
+            renderNewBillOptions();
+            showToast("आइटम सेव हो गया!", "success");
+        }
+
+        // 5. PURCHASES & SUPPLIER LEDGER
+        function renderPurchasesTable() {
+            const tbody = document.getElementById('purchasesTbody');
+            if (dbData.purchases.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">कोई खरीद दर्ज नहीं है।</td></tr>';
+                return;
+            }
+            tbody.innerHTML = dbData.purchases.map(p => `
+                <tr class="border-b border-slate-100">
+                    <td class="p-3 text-xs text-slate-500">${new Date(p.date).toLocaleDateString('hi-IN')}</td>
+                    <td class="p-3 font-bold text-slate-800">${p.supplier}</td>
+                    <td class="p-3">${p.productName}</td>
+                    <td class="p-3 text-center font-bold">${p.qty}</td>
+                    <td class="p-3 text-right font-bold text-amber-700">₹${p.total}</td>
+                    <td class="p-3 text-center">
+                        ${p.photo ? `<button onclick="viewImageModal('${p.photo}')" class="text-xs text-blue-600 underline">फोटो देखें</button>` : '<span class="text-xs text-slate-400">-</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openPurchaseModal() {
+            const select = document.getElementById('purchProductId');
+            select.innerHTML = dbData.products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            document.getElementById('modalPurchase').classList.remove('hidden');
+        }
+
+        function savePurchaseForm(e) {
+            e.preventDefault();
+            const supplier = document.getElementById('purchSupplier').value.trim();
+            const pid = document.getElementById('purchProductId').value;
+            const qty = parseInt(document.getElementById('purchQty').value) || 0;
+            const total = parseFloat(document.getElementById('purchTotal').value) || 0;
+            const fileInput = document.getElementById('purchBillPhoto');
+
+            const p = dbData.products.find(x => x.id === pid);
+            const saveRecord = (photoBase64 = "") => {
+                dbData.purchases.push({
+                    id: 'pur_' + Date.now(),
+                    date: new Date().toISOString(),
+                    supplier: supplier,
+                    productId: pid,
+                    productName: p ? p.name : 'Unknown',
+                    qty: qty,
+                    total: total,
+                    photo: photoBase64
+                });
+
+                // Increment stock
+                if (p) p.stock += qty;
+
+                saveToLocalStorage();
+                closeModal('modalPurchase');
+                renderPurchasesTable();
+                renderProductList();
+                showToast("खरीद दर्ज की गई और स्टॉक अपडेट हुआ!", "success");
+            };
+
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(evt) { saveRecord(evt.target.result); };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                saveRecord("");
+            }
+        }
+
+        // 6. DAILY PRODUCTION
+        function renderProductionTable() {
+            const tbody = document.getElementById('productionTbody');
+            const select = document.getElementById('prodProductId');
+            select.innerHTML = '<option value="">-- चुनें --</option>' + dbData.products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+            if (dbData.production.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400">कोई उत्पादन रिकॉर्ड नहीं है।</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = [...dbData.production].reverse().map(pr => `
+                <tr class="border-b border-slate-100">
+                    <td class="p-3 text-xs text-slate-500">${pr.date}</td>
+                    <td class="p-3 font-bold text-slate-800">${pr.productName}</td>
+                    <td class="p-3 text-center font-bold text-indigo-700">+${pr.qty}</td>
+                </tr>
+            `).join('');
+        }
+
+        function saveProduction(e) {
+            e.preventDefault();
+            const date = document.getElementById('prodDate').value;
+            const pid = document.getElementById('prodProductId').value;
+            const qty = parseInt(document.getElementById('prodQty').value) || 0;
+
+            const p = dbData.products.find(x => x.id === pid);
+            if (!p) return;
+
+            dbData.production.push({
+                id: 'pr_' + Date.now(),
+                date: date,
+                productId: pid,
+                productName: p.name,
+                qty: qty
+            });
+
+            p.stock += qty;
+            saveToLocalStorage();
+            renderProductionTable();
+            renderProductList();
+            showToast("उत्पादन सहेजा गया और स्टॉक बढ़ गया!", "success");
+        }
+
+        // 7. LABOUR ATTENDANCE & PAYROLL
+        function renderAttendanceTable() {
+            const dateInput = document.getElementById('attendanceDate');
+            if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+            const selDate = dateInput.value;
+
+            const tbody = document.getElementById('attendanceTbody');
+            if (dbData.workers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">कोई मजदूर दर्ज नहीं है।</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = dbData.workers.map(w => {
+                const attRecord = dbData.attendance.find(a => a.workerId === w.id && a.date === selDate);
+                const status = attRecord ? attRecord.status : 'P';
+
+                return `
+                    <tr class="border-b border-slate-100">
+                        <td class="p-3 font-bold text-slate-800">${w.name}</td>
+                        <td class="p-3 text-right">₹${w.wage}</td>
+                        <td class="p-3 text-center">
+                            <select onchange="updateAttendanceStatus('${w.id}', '${selDate}', this.value)" class="p-1 text-xs rounded border font-bold ${status==='P'?'bg-emerald-100 text-emerald-800':status==='HD'?'bg-amber-100 text-amber-800':'bg-rose-100 text-rose-800'}">
+                                <option value="P" ${status==='P'?'selected':''}>✓ Present (P)</option>
+                                <option value="HD" ${status==='HD'?'selected':''}>½ Half Day (HD)</option>
+                                <option value="A" ${status==='A'?'selected':''}>✗ Absent (A)</option>
+                            </select>
+                        </td>
+                        <td class="p-3 text-right font-bold text-rose-600">₹${w.totalAdvance || 0}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="addWorkerAdvance('${w.id}')" class="px-2 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded text-xs font-semibold hover:bg-rose-100">+ एडवांस दें</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openWorkerModal() {
+            document.getElementById('modalWorker').classList.remove('hidden');
+        }
+
+        function saveWorkerForm(e) {
+            e.preventDefault();
+            const name = document.getElementById('workerName').value.trim();
+            const wage = parseFloat(document.getElementById('workerWage').value) || 0;
+
+            dbData.workers.push({
+                id: 'w_' + Date.now(),
+                name: name,
+                wage: wage,
+                totalAdvance: 0
+            });
+
+            saveToLocalStorage();
+            closeModal('modalWorker');
+            renderAttendanceTable();
+            showToast("मजदूर जोड़ा गया!", "success");
+        }
+
+        function updateAttendanceStatus(workerId, date, status) {
+            let record = dbData.attendance.find(a => a.workerId === workerId && a.date === date);
+            if (record) {
+                record.status = status;
+            } else {
+                dbData.attendance.push({ id: 'att_' + Date.now(), workerId: workerId, date: date, status: status });
+            }
+            saveToLocalStorage();
+            showToast("हाजिरी अपडेट हो गई", "info");
+        }
+
+        function markAllAttendance(status) {
+            const selDate = document.getElementById('attendanceDate').value;
+            dbData.workers.forEach(w => {
+                updateAttendanceStatus(w.id, selDate, status);
+            });
+            renderAttendanceTable();
+        }
+
+        function addWorkerAdvance(workerId) {
+            const amtStr = prompt("एडवांस रकम (₹) दर्ज करें:");
+            if (!amtStr) return;
+            const amt = parseFloat(amtStr);
+            if (isNaN(amt) || amt <= 0) return;
+
+            const w = dbData.workers.find(x => x.id === workerId);
+            if (w) {
+                w.totalAdvance = (w.totalAdvance || 0) + amt;
+                saveToLocalStorage();
+                renderAttendanceTable();
+                showToast(`एडवांस दर्ज किया गया: ₹${amt}`, "success");
+            }
+        }
+
+        // 8. BILL HISTORY
+        function renderBillHistory() {
+            const tbody = document.getElementById('historyTbody');
+            const query = (document.getElementById('historySearchInput')?.value || '').toLowerCase();
+
+            const list = dbData.bills.filter(b => 
+                b.billNo.toLowerCase().includes(query) || 
+                b.custName.toLowerCase().includes(query)
+            );
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">कोई बिल नहीं मिला।</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = [...list].reverse().map(b => `
+                <tr class="border-b border-slate-100 hover:bg-slate-50">
+                    <td class="p-3 font-mono font-bold text-slate-900">${b.billNo}</td>
+                    <td class="p-3 text-xs text-slate-500">${new Date(b.date).toLocaleDateString('hi-IN')}</td>
+                    <td class="p-3 font-semibold text-slate-800">${b.custName}</td>
+                    <td class="p-3 text-right font-bold text-emerald-700">₹${b.finalTotal}</td>
+                    <td class="p-3 text-center">
+                        <span class="px-2 py-0.5 text-xs font-bold rounded ${b.payMode==='Due'?'bg-rose-100 text-rose-700':'bg-emerald-100 text-emerald-700'}">${b.payMode}</span>
+                    </td>
+                    <td class="p-3 text-center space-x-2">
+                        <button onclick="viewInvoiceModal('${b.id}')" class="text-blue-600 hover:text-blue-800 font-semibold text-xs"><i class="fa-solid fa-eye"></i> देखें</button>
+                        <button onclick="deleteBill('${b.id}')" class="text-rose-600 hover:text-rose-800 text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteBill(billId) {
+            if (!confirm("क्या आप वाकई इस बिल को हटाना चाहते हैं?")) return;
+            dbData.bills = dbData.bills.filter(b => b.id !== billId);
+            saveToLocalStorage();
+            renderBillHistory();
+            renderDashboardStats();
+            showToast("बिल हटा दिया गया", "info");
+        }
+
+        // INVOICE MODAL VIEW & PRINT
+        function viewInvoiceModal(billId) {
+            const bill = dbData.bills.find(b => b.id === billId);
+            if (!bill) return;
+
+            currentViewingBill = bill;
+
+            document.getElementById('invBizName').innerText = dbData.settings.businessName || 'UJJWALJI Enterprise';
+            document.getElementById('invTagline').innerText = dbData.settings.tagline || 'Purity Is Our Identity';
+            document.getElementById('invUdyam').innerText = dbData.settings.udyamNo || 'UDYAM-UP-06-0025629';
+            document.getElementById('invBizPhone').innerText = dbData.settings.ownerName + ' | ' + dbData.settings.phone;
+
+            document.getElementById('invBillNo').innerText = bill.billNo;
+            document.getElementById('invDate').innerText = 'तारीख: ' + new Date(bill.date).toLocaleDateString('hi-IN');
+            document.getElementById('invCustName').innerText = bill.custName;
+            document.getElementById('invCustPhone').innerText = bill.custPhone || 'N/A';
+            document.getElementById('invCustArea').innerText = bill.areaName || '-';
+            document.getElementById('invCustAreaCode').innerText = bill.areaCode || '';
+
+            const tbody = document.getElementById('invItemsTbody');
+            tbody.innerHTML = bill.items.map(i => `
+                <tr>
+                    <td class="p-2 font-semibold text-slate-800">${i.name}</td>
+                    <td class="p-2 text-center font-bold">${i.qty}</td>
+                    <td class="p-2 text-right">₹${i.rate}</td>
+                    <td class="p-2 text-right font-bold">₹${(i.qty * i.rate).toFixed(2)}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('invSubtotal').innerText = '₹' + (bill.subtotal || bill.finalTotal).toFixed(2);
+            document.getElementById('invDiscount').innerText = '-₹' + (bill.discount || 0).toFixed(2);
+            document.getElementById('invTotal').innerText = '₹' + bill.finalTotal.toFixed(2);
+            document.getElementById('invPayMode').innerText = bill.payMode;
+
+            // Generate UPI QR Code inside Invoice Modal
+            const qrBox = document.getElementById('invQrCode');
+            qrBox.innerHTML = '';
+            const upiString = `upi://pay?pa=${dbData.settings.upiId || 'ujjwalji@upi'}&pn=${encodeURIComponent(dbData.settings.businessName)}&am=${bill.finalTotal}&cu=INR`;
+            new QRCode(qrBox, { text: upiString, width: 70, height: 70 });
+
+            document.getElementById('modalInvoice').classList.remove('hidden');
+        }
+
+        function shareInvoiceWhatsApp() {
+            if (!currentViewingBill) return;
+            const b = currentViewingBill;
+            const msg = `*${dbData.settings.businessName}*\nUDYAM: ${dbData.settings.udyamNo}\n------------------------------\n*बिल # ${b.billNo}*\nग्राहक: ${b.custName}\nकुल देय रकम: *₹${b.finalTotal}*\nभुगतान: ${b.payMode}\n------------------------------\n*Purity Is Our Identity*`;
+            window.open(`https://wa.me/91${b.custPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function downloadInvoicePNG() {
+            const el = document.getElementById('printableInvoice');
+            html2canvas(el).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${currentViewingBill ? currentViewingBill.billNo : 'Invoice'}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        // SETTINGS & LOGO UPLOAD
+        function populateSettingsFields() {
+            document.getElementById('setBusinessName').value = dbData.settings.businessName || '';
+            document.getElementById('setUdyamNo').value = dbData.settings.udyamNo || 'UDYAM-UP-06-0025629';
+            document.getElementById('setOwnerPhone').value = dbData.settings.ownerName + ' | ' + dbData.settings.phone;
+            document.getElementById('setUpiId').value = dbData.settings.upiId || '';
+            document.getElementById('fbDbUrl').value = dbData.settings.firebaseUrl || '';
+            document.getElementById('fbRoomId').value = dbData.settings.syncRoomId || 'ujjwalji_main';
+            document.getElementById('fbConfigJson').value = dbData.settings.firebaseConfig || '';
+        }
+
+        function updateSettingsQRPreview() {
+            const upiId = document.getElementById('setUpiId').value.trim() || 'ujjwalji@upi';
+            const qrBox = document.getElementById('settingsQrPreview');
+            qrBox.innerHTML = '';
+            new QRCode(qrBox, { text: `upi://pay?pa=${upiId}&pn=UJJWALJI&cu=INR`, width: 100, height: 100 });
+            document.getElementById('settingsQrUpiText').innerText = upiId;
+        }
+
+        function handleLogoUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 100;
+                    canvas.height = 100;
+                    ctx.drawImage(img, 0, 0, 100, 100);
+                    const compressedBase64 = canvas.toDataURL('image/png');
+                    dbData.settings.logo = compressedBase64;
+                    saveToLocalStorage();
+                    showToast("लोगो सफलतापूर्वक अपलोड हो गया!", "success");
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveSettings() {
+            dbData.settings.businessName = document.getElementById('setBusinessName').value.trim();
+            dbData.settings.udyamNo = document.getElementById('setUdyamNo').value.trim();
+            dbData.settings.upiId = document.getElementById('setUpiId').value.trim();
+            dbData.settings.firebaseUrl = document.getElementById('fbDbUrl').value.trim();
+            dbData.settings.syncRoomId = document.getElementById('fbRoomId').value.trim() || 'ujjwalji_main';
+            dbData.settings.firebaseConfig = document.getElementById('fbConfigJson').value.trim();
+
+            saveToLocalStorage();
+            showToast("सेटिंग्स सहेजी गईं!", "success");
+        }
+
+        // EXPORT & IMPORT JSON BACKUP
+        function exportJSONBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dbData, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `UJJWALJI_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        function importJSONBackup(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    if (parsed && parsed.settings) {
+                        dbData = parsed;
+                        saveToLocalStorage();
+                        renderAll();
+                        showToast("बैकअप सफलतापूर्वक रिस्टोर हो गया!", "success");
+                    } else {
+                        showToast("अमान्य बैकअप फाइल", "error");
+                    }
+                } catch (err) {
+                    showToast("फाइल पढ़ने में त्रुटि", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ==========================================
+        // 9. FIREBASE REALTIME DATABASE SYNC ENGINE
+        // ==========================================
+
+        function updateSyncStatusUI(status, text, badgeText) {
+            const statusPill = document.getElementById('syncStatusPill');
+            const statusText = document.getElementById('syncStatusText');
+            const badgeInSettings = document.getElementById('syncBadgeInSettings');
+
+            if (status === 'live') {
+                statusPill.className = 'cursor-pointer text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-700 flex items-center gap-1.5 hover:bg-emerald-900 transition';
+                statusPill.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span><span>🟢 Cloud Live</span>`;
+                if (badgeInSettings) {
+                    badgeInSettings.className = 'text-xs px-2.5 py-1 rounded-full bg-emerald-100 font-bold text-emerald-800';
+                    badgeInSettings.innerText = '🔴 क्लाउड लाइव (सक्रिय)';
+                }
+            } else if (status === 'syncing') {
+                statusPill.className = 'cursor-pointer text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-950 text-blue-300 border border-blue-700 flex items-center gap-1.5';
+                statusPill.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-400 animate-spin"></span><span>🔄 Syncing...</span>`;
+            } else {
+                statusPill.className = 'cursor-pointer text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-800 text-amber-400 border border-slate-700 flex items-center gap-1.5 hover:bg-slate-700 transition';
+                statusPill.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400"></span><span>🟡 Local Only</span>`;
+                if (badgeInSettings) {
+                    badgeInSettings.className = 'text-xs px-2.5 py-1 rounded-full bg-slate-100 font-bold text-slate-600';
+                    badgeInSettings.innerText = 'कनेक्ट नहीं है';
+                }
+            }
+        }
+
+        function initFirebaseFromSettingsIfPresent() {
+            const dbUrl = dbData.settings.firebaseUrl || '';
+            if (dbUrl) {
+                connectFirebaseSync(true); // silent auto-connect
+            }
+        }
+
+        function connectFirebaseSync(silent = false) {
+            const dbUrl = document.getElementById('fbDbUrl').value.trim() || dbData.settings.firebaseUrl;
+            const configStr = document.getElementById('fbConfigJson').value.trim() || dbData.settings.firebaseConfig;
+            const roomId = document.getElementById('fbRoomId').value.trim() || dbData.settings.syncRoomId || 'ujjwalji_main';
+
+            if (!dbUrl) {
+                if (!silent) showToast("कृपया Firebase Database URL दर्ज करें", "warning");
+                return;
+            }
+
+            try {
+                updateSyncStatusUI('syncing');
+
+                // Initialize Firebase App if not initialized
+                if (!firebase.apps.length) {
+                    let configObj = { databaseURL: dbUrl };
+                    if (configStr) {
+                        try {
+                            const parsed = JSON.parse(configStr);
+                            configObj = { ...parsed, databaseURL: dbUrl };
+                        } catch(e) {
+                            console.warn("Could not parse Firebase config JSON, using URL mode");
+                        }
+                    }
+                    firebaseApp = firebase.initializeApp(configObj);
+                } else {
+                    firebaseApp = firebase.app();
+                }
+
+                firebaseDb = firebase.database();
+                firebaseRef = firebaseDb.ref('rooms/' + roomId);
+
+                // Listen to Real-time Changes across all devices
+                firebaseRef.on('value', (snapshot) => {
+                    const remoteData = snapshot.val();
+                    if (remoteData) {
+                        // Compare timestamp to avoid overwriting newer local edits if offline
+                        if (!dbData.lastUpdated || (remoteData.lastUpdated && remoteData.lastUpdated > dbData.lastUpdated)) {
+                            dbData = remoteData;
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(dbData));
+                            renderAll();
+                            if (!silent) showToast("क्लाउड से नया डेटा सिंक हुआ!", "success");
+                        }
+                    }
+                    isSyncingActive = true;
+                    updateSyncStatusUI('live');
+                }, (error) => {
+                    console.error("Firebase Sync Error:", error);
+                    updateSyncStatusUI('offline');
+                    if (!silent) showToast("Firebase सिंक एरर: " + error.message, "error");
+                });
+
+                // Save URL & RoomId in Settings
+                dbData.settings.firebaseUrl = dbUrl;
+                dbData.settings.syncRoomId = roomId;
+                dbData.settings.firebaseConfig = configStr;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(dbData));
+
+                if (!silent) showToast("Firebase क्लाउड लाइव सिंक चालू हो गया!", "success");
+
+            } catch (err) {
+                console.error("Firebase connection error:", err);
+                updateSyncStatusUI('offline');
+                if (!silent) showToast("कनेक्शन विफल: " + err.message, "error");
+            }
+        }
+
+        function pushDataToFirebaseIfConnected() {
+            if (firebaseRef && isSyncingActive) {
+                updateSyncStatusUI('syncing');
+                dbData.lastUpdated = Date.now();
+                firebaseRef.set(dbData, (error) => {
+                    if (error) {
+                        console.error("Cloud push error:", error);
+                        updateSyncStatusUI('offline');
+                    } else {
+                        updateSyncStatusUI('live');
+                    }
+                });
+            }
+        }
+
+        function pushToCloudManual() {
+            if (!firebaseRef) {
+                showToast("पहले Firebase कनेक्ट करें!", "warning");
+                return;
+            }
+            updateSyncStatusUI('syncing');
+            dbData.lastUpdated = Date.now();
+            firebaseRef.set(dbData)
+                .then(() => {
+                    updateSyncStatusUI('live');
+                    showToast("डेटा क्लाउड पर भेज दिया गया!", "success");
+                })
+                .catch((err) => showToast("त्रुटि: " + err.message, "error"));
+        }
+
+        function pullFromCloudManual() {
+            if (!firebaseRef) {
+                showToast("पहले Firebase कनेक्ट करें!", "warning");
+                return;
+            }
+            updateSyncStatusUI('syncing');
+            firebaseRef.once('value')
+                .then((snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        dbData = data;
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(dbData));
+                        renderAll();
+                        updateSyncStatusUI('live');
+                        showToast("क्लाउड से नया डेटा प्राप्त हुआ!", "success");
+                    } else {
+                        showToast("क्लाउड पर कोई डेटा नहीं मिला", "info");
+                    }
+                })
+                .catch((err) => showToast("त्रुटि: " + err.message, "error"));
+        }
+
+        function disconnectFirebaseSync() {
+            if (firebaseRef) {
+                firebaseRef.off();
+                firebaseRef = null;
+            }
+            isSyncingActive = false;
+            updateSyncStatusUI('offline');
+            showToast("क्लाउड सिंक डिस्कनेक्ट हो गया", "info");
+        }
+
+        // Helper Modal Closer
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
