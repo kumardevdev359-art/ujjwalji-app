@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UJJWALJI — Purity Is Our Identity | Business Management</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- html2canvas for Image Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Firebase Compat SDKs (App & Realtime Database) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Hind', 'Inter', sans-serif; background-color: #f1f5f9; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .invoice-print-area { background: #ffffff; color: #0f172a; }
+        @media print {
+            body * { visibility: hidden; }
+            #printableInvoice, #printableInvoice * { visibility: visible; }
+            #printableInvoice { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Top Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md border-b-2 border-amber-500">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div id="appLogoHeader" class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center font-bold text-slate-900 overflow-hidden border-2 border-amber-300">
+                    <i class="fa-solid font-bold text-lg">U</i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+                        <span>UJJWALJI</span>
+                        <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full font-normal">
+                            UDYAM-UP-06-0025629
+                        </span>
+                    </h1>
+                    <p class="text-xs text-amber-400 italic">Purity Is Our Identity</p>
+                </div>
+            </div>
+
+            <!-- Header Right: Cloud Sync Status Pill & Clock -->
+            <div class="flex items-center space-x-3">
+                <div id="syncStatusPill" onclick="switchTab('settings')" class="cursor-pointer text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-800 text-amber-400 border border-slate-700 flex items-center gap-1.5 hover:bg-slate-700 transition">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="syncStatusText">🟡 Local Only</span>
+                </div>
+                <button onclick="toggleMobileMenu()" class="md:hidden text-slate-300 hover:text-white p-2">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Bar -->
+        <nav id="navBar" class="bg-slate-800 border-t border-slate-700 hidden md:block">
+            <div class="max-w-7xl mx-auto px-2 flex flex-wrap gap-1 text-sm font-medium">
+                <button onclick="switchTab('dashboard')" class="nav-btn px-4 py-2.5 text-amber-400 border-b-2 border-amber-400 flex items-center gap-2 hover:bg-slate-700/50 transition" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i> डैशबोर्ड
+                </button>
+                <button onclick="switchTab('new-bill')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="new-bill">
+                    <i class="fa-solid fa-file-invoice-dollar text-emerald-400"></i> नया बिल
+                </button>
+                <button onclick="switchTab('customers')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="customers">
+                    <i class="fa-solid fa-users text-blue-400"></i> ग्राहक (60-Hanger)
+                </button>
+                <button onclick="switchTab('stock')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="stock">
+                    <i class="fa-solid fa-boxes-stacked text-purple-400"></i> स्टॉक व आइटम
+                </button>
+                <button onclick="switchTab('purchases')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="purchases">
+                    <i class="fa-solid fa-truck-field text-amber-400"></i> खरीद व सप्लायर
+                </button>
+                <button onclick="switchTab('production')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="production">
+                    <i class="fa-solid fa-industry text-indigo-400"></i> दैनिक उत्पादन
+                </button>
+                <button onclick="switchTab('labour')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="labour">
+                    <i class="fa-solid fa-clipboard-user text-rose-400"></i> मजदूर व हाजिरी
+                </button>
+                <button onclick="switchTab('history')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="history">
+                    <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i> बिल इतिहास
+                </button>
+                <button onclick="switchTab('settings')" class="nav-btn px-4 py-2.5 text-slate-300 border-b-2 border-transparent flex items-center gap-2 hover:bg-slate-700/50 hover:text-white transition" data-tab="settings">
+                    <i class="fa-solid fa-gear text-slate-400"></i> सेटिंग्स व क्लाउड
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-1">
+
+        <!-- DASHBOARD TAB -->
+        <div id="tab-dashboard" class="tab-content active space-y-6">
+            <!-- Key Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-500 uppercase">आज की बिक्री</div>
+                    <div id="statTodaySales" class="text-2xl font-black text-slate-900 mt-1">₹0</div>
+                    <div class="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-trend-up"></i> आज का कुल कैश/UPI
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-500 uppercase">कुल बकाया (Dues)</div>
+                    <div id="statTotalDues" class="text-2xl font-black text-rose-600 mt-1">₹0</div>
+                    <div class="text-xs text-rose-500 mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> ग्राहकों से लेना
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-500 uppercase">कुल ग्राहक</div>
+                    <div id="statTotalCustomers" class="text-2xl font-black text-blue-600 mt-1">0</div>
+                    <div class="text-xs text-blue-500 mt-1">60-Hanger स्कीम वाले</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="text-xs font-bold text-slate-500 uppercase">स्टॉक वैल्यू (अनुमानित)</div>
+                    <div id="statStockValue" class="text-2xl font-black text-purple-600 mt-1">₹0</div>
+                    <div class="text-xs text-purple-500 mt-1">गोदाम में माल</div>
+                </div>
+            </div>
+
+            <!-- Quick Action Bar & Low Stock Warning -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-amber-500"></i> त्वरित कार्य (Quick Actions)
+                    </h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <button onclick="switchTab('new-bill')" class="p-3 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200 hover:bg-emerald-100 flex flex-col items-center justify-center font-semibold text-sm">
+                            <i class="fa-solid fa-circle-plus text-xl mb-1"></i> नया बिल बनाएँ
+                        </button>
+                        <button onclick="switchTab('customers')" class="p-3 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100 flex flex-col items-center justify-center font-semibold text-sm">
+                            <i class="fa-solid fa-user-plus text-xl mb-1"></i> नया ग्राहक जोड़ें
+                        </button>
+                        <button onclick="switchTab('production')" class="p-3 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-200 hover:bg-indigo-100 flex flex-col items-center justify-center font-semibold text-sm">
+                            <i class="fa-solid fa-square-plus text-xl mb-1"></i> उत्पादन दर्ज करें
+                        </button>
+                        <button onclick="switchTab('labour')" class="p-3 bg-rose-50 text-rose-700 rounded-lg border border-rose-200 hover:bg-rose-100 flex flex-col items-center justify-center font-semibold text-sm">
+                            <i class="fa-solid fa-user-check text-xl mb-1"></i> आज की हाजिरी
+                        </button>
+                    </div>
+
+                    <!-- Recent Bills Widget -->
+                    <div class="pt-4 border-t border-slate-100">
+                        <h4 class="font-bold text-sm text-slate-700 mb-3 flex items-center justify-between">
+                            <span>हाल के बिल (Recent Bills)</span>
+                            <button onclick="switchTab('history')" class="text-xs text-amber-600 hover:underline">सभी देखें &rarr;</button>
+                        </h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-slate-100 text-slate-600 font-semibold">
+                                    <tr>
+                                        <th class="p-2">बिल #</th>
+                                        <th class="p-2">ग्राहक</th>
+                                        <th class="p-2">रकम</th>
+                                        <th class="p-2">भुगतान</th>
+                                        <th class="p-2">एक्शन</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentBillsTbody">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Low Stock Alert Box -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2 mb-3">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-500"></i> कम स्टॉक चेतावनी
+                        </h3>
+                        <div id="lowStockList" class="space-y-2 text-sm max-h-64 overflow-y-auto pr-1">
+                            <!-- Dynamic -->
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500">
+                        सप्लायर से माल मँगवाने के लिए 'खरीद व सप्लायर' टैब का प्रयोग करें।
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW BILL TAB -->
+        <div id="tab-new-bill" class="tab-content space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-200">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice text-emerald-600"></i> नया बिल / इनवॉइस बनाएँ
+                    </h2>
+                    <!-- Customer Mode Switcher -->
+                    <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
+                        <button id="btnCustomerModeSaved" onclick="setBillingCustomerMode('saved')" class="px-3 py-1.5 rounded-md bg-white text-slate-900 shadow-sm">
+                            👤 सेव किया ग्राहक
+                        </button>
+                        <button id="btnCustomerModeDirect" onclick="setBillingCustomerMode('direct')" class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900">
+                            ⚡ डायरेक्ट / नकद ग्राहक
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Customer Details Section -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <!-- Saved Customer Search Mode -->
+                    <div id="sectionSavedCustomer" class="md:col-span-1 space-y-2">
+                        <label class="text-xs font-bold text-slate-700">ग्राहक खोजें (नाम / फोन / एरियां)</label>
+                        <div class="relative">
+                            <input type="text" id="billCustomerSearchInput" oninput="searchCustomerForBill(this.value)" placeholder="टाइप करें..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                            <div id="billCustomerSearchResults" class="absolute z-20 top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto hidden"></div>
+                        </div>
+                        <div id="selectedCustomerBadge" class="hidden p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs">
+                            <div class="font-bold text-emerald-800" id="selCustName">--</div>
+                            <div class="text-slate-600" id="selCustPhone">--</div>
+                            <div class="text-slate-500 italic" id="selCustArea">--</div>
+                        </div>
+                    </div>
+
+                    <!-- Direct Customer Input Mode -->
+                    <div id="sectionDirectCustomer" class="hidden md:col-span-1 space-y-2">
+                        <label class="text-xs font-bold text-slate-700">डायरेक्ट ग्राहक का नाम</label>
+                        <input type="text" id="billDirectName" placeholder="जैसे: राम शर्मा (नकद)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                        <input type="tel" id="billDirectPhone" placeholder="मोबाइल नंबर (ऐच्छिक)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                    </div>
+
+                    <!-- Area Name & Code (100% Editable + GPS Button) -->
+                    <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 flex justify-between items-center">
+                                <span>एरियां नाम (Area Name)</span>
+                                <button onclick="fetchGPSLocation()" type="button" class="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                                    <i class="fa-solid fa-location-crosshairs"></i> GPS भरें
+                                </button>
+                            </label>
+                            <input type="text" id="billAreaName" placeholder="जैसे: मेन मार्केट" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-700">एरियां कोड / लैंडमार्क</label>
+                            <input type="text" id="billAreaCode" placeholder="जैसे: AR-101 / Landmark" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Items Table -->
+                <div class="mt-6">
+                    <h3 class="font-bold text-sm text-slate-800 mb-2">सामान / आइटम जोड़ें</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div class="sm:col-span-5">
+                            <select id="billItemSelect" onchange="onBillItemChange()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                                <option value="">-- आइटम चुनें --</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <input type="number" id="billItemQty" value="1" min="1" placeholder="मात्रा (Qty)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <input type="number" id="billItemRate" placeholder="दर (Rate ₹)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button onclick="addBillItemRow()" type="button" class="w-full py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700">
+                                <i class="fa-solid fa-plus"></i> जोड़ें
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Items Cart Table -->
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-100 text-slate-700 font-semibold">
+                                <tr>
+                                    <th class="p-2.5">विवरण (Ite
