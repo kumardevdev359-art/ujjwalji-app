@@ -337,9 +337,7 @@
           <!-- Saved Customer Selector -->
           <div id="bill-cust-saved-box">
             <label class="block text-xs font-semibold text-slate-300 mb-1">ग्राहक खोजें या चुनें</label>
-            <select id="bill-customer-select" onchange="onBillingCustomerSelected()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
-              <option value="">-- ग्राहक का चयन करें --</option>
-            </select>
+            <input id="bill-customer-select" list="bill-customer-options" oninput="onBillingCustomerSearch()" onchange="onBillingCustomerSelected()" autocomplete="off" placeholder="नाम, मोबाइल, पता या Customer ID टाइप करें..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500"><datalist id="bill-customer-options"></datalist>
           </div>
 
           <!-- Walk-in Customer Form -->
@@ -377,9 +375,7 @@
           
           <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 bg-slate-900/40 p-3 rounded-lg border border-slate-700/50">
             <div class="sm:col-span-5">
-              <select id="bill-item-select" onchange="onBillItemChosen()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
-                <option value="">-- उत्पाद चुनें --</option>
-              </select>
+              <input id="bill-item-select" list="bill-product-options" oninput="onBillProductSearch()" onchange="onBillItemChosen()" autocomplete="off" placeholder="उत्पाद का नाम या कोड टाइप करें..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500"><datalist id="bill-product-options"></datalist>
             </div>
             <div class="sm:col-span-2">
               <input type="number" id="bill-item-qty" min="1" value="1" placeholder="मात्रा" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
@@ -746,7 +742,8 @@
 
         <!-- Input Box -->
         <form onsubmit="handleSendCompanyChat(event)" class="pt-3 border-t border-slate-700 flex items-center gap-2">
-          <input type="text" id="company-chat-input" placeholder="यहाँ संदेश लिखें..." required class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-500">
+          <input type="file" id="company-chat-photo" accept="image/*" class="hidden" onchange="handleCompanyChatPhoto(event)"><button type="button" onclick="document.getElementById('company-chat-photo').click()" title="फोटो भेजें" class="bg-slate-800 border border-slate-600 text-amber-400 rounded-xl px-3 py-2"><i class="fa-solid fa-image"></i></button>
+          <input type="text" id="company-chat-input" placeholder="यहाँ संदेश लिखें..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-500">
           <button type="submit" class="gold-gradient text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1 hover:opacity-90 transition">
             <i class="fa-solid fa-paper-plane"></i> भेजें
           </button>
@@ -805,10 +802,25 @@
     <!-- 10. SETTINGS & CLOUD VIEW -->
     <section id="view-settings" class="tab-view space-y-6 hidden">
       <div class="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl space-y-6 max-w-3xl mx-auto">
+        <div id="owner-module-control" class="bg-slate-900/70 border border-amber-500/30 rounded-xl p-4 space-y-3">
+          <h3 class="text-sm font-bold text-amber-400"><i class="fa-solid fa-shield-halved"></i> Owner Master Control — मॉड्यूल लॉक</h3>
+          <p class="text-[11px] text-slate-400">लॉक किए गए मॉड्यूल संबंधित स्टाफ के लिए बंद रहेंगे। Owner हमेशा एक्सेस कर सकेगा।</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="flex gap-2 items-center"><input type="checkbox" data-module-lock="customers" onchange="setModuleLock('customers',this.checked)"> ग्राहक</label>
+            <label class="flex gap-2 items-center"><input type="checkbox" data-module-lock="products" onchange="setModuleLock('products',this.checked)"> उत्पाद / स्टॉक</label>
+            <label class="flex gap-2 items-center"><input type="checkbox" data-module-lock="production" onchange="setModuleLock('production',this.checked)"> उत्पादन</label>
+            <label class="flex gap-2 items-center"><input type="checkbox" data-module-lock="purchases" onchange="setModuleLock('purchases',this.checked)"> खरीद / सप्लायर</label>
+            <label class="flex gap-2 items-center"><input type="checkbox" data-module-lock="workers" onchange="setModuleLock('workers',this.checked)"> मजदूर / हाजिरी</label>
+            <label class="flex gap-2 items-center"><input type="checkbox" data-module-lock="chat" onchange="setModuleLock('chat',this.checked)"> चैट</label>
+          </div>
+        </div>
         <h2 class="text-lg font-bold text-amber-400 flex items-center gap-2 border-b border-slate-700 pb-3">
           <i class="fa-solid fa-gear"></i> ऐप सेटिंग्स व क्लाउड सिंक
         </h2>
 
+        <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-3 text-[11px] text-slate-300">
+          <b class="text-amber-400">क्लाउड स्टोरेज नोट:</b> डेटा बढ़ने पर Firebase Realtime Database/Storage में उपयोग बढ़ेगा। क्षमता और ऑटो-स्केलिंग Firebase के प्लान/बिलिंग पर निर्भर है; ऐप अपने आप Firebase प्लान अपग्रेड नहीं कर सकता।
+        </div>
         <!-- Firebase Config Section -->
         <div class="space-y-4 bg-slate-900/60 p-4 rounded-xl border border-slate-700">
           <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
@@ -1251,6 +1263,7 @@
           <button onclick="downloadInvoicePNG()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">
             <i class="fa-solid fa-image"></i> PNG डाउनलोड
           </button>
+          <button onclick="shareCurrentInvoice()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"><i class="fa-solid fa-share-nodes"></i> बिल शेयर</button>
           <button onclick="window.print()" class="gold-gradient text-slate-950 px-3 py-1.5 rounded-lg text-xs font-bold">
             <i class="fa-solid fa-print"></i> प्रिंट / PDF
           </button>
@@ -1416,7 +1429,9 @@
         logoUrl: "",
         upiId: "9876543210@paytm",
         upiName: "UJJWALJI ASHISH KUMAR",
-        appRateLocked: true
+        appRateLocked: true,
+        moduleLocks: { purchases: true, workers: true, settings: true },
+        blockedMobiles: []
       },
       customers: [
         { id: "cust-1", code: "UJW-101", shopName: "उज्जल ज्वैलर्स", name: "राम कुमार", mobile: "9876543210", areaName: "दिबियापुर रोड", areaCode: "AUR-01", dues: 12000, hangerTarget: 60, hangerCurrent: 24, photo: "", gps: "" }
@@ -1444,6 +1459,8 @@
     let activeDirectPartner = null;
     let peerConnection = null;
     let localStream = null;
+    let currentInvoiceId = null;
+    let selectedProductId = null;
 
     /* ==========================================================================
        INITIALIZATION & STORAGE HELPERS
@@ -1453,6 +1470,7 @@
       setupDatalists();
       initFirebaseConnection();
       renderAllViews();
+      applyRoleNavigation();
       
       // Auto attendance date default to today
       const todayStr = new Date().toISOString().split('T')[0];
@@ -1689,6 +1707,7 @@
     }
 
     function connectFirebaseCloud() {
+      if (!isOwner()) { showToast('मुख्य सेटिंग्स केवल Owner बदल सकता है', 'fa-lock'); return; }
       state.settings.firebaseUrl = document.getElementById('setting-firebase-url').value.trim();
       state.settings.syncRoomId = document.getElementById('setting-sync-room-id').value.trim();
       state.user.companyId = state.settings.syncRoomId || DEFAULT_COMPANY_ID;
@@ -1722,6 +1741,7 @@
       loadFromLocalStorage(); // Switch dataset to safeCompanyId key
       initFirebaseConnection();
       renderAllViews();
+      applyRoleNavigation();
       closeModal('modal-login');
       showToast(`स्वागत है, ${state.user.name}!`);
     }
@@ -1729,7 +1749,38 @@
     /* ==========================================================================
        UI NAVIGATION & TAB SWITCHER
        ========================================================================== */
+    function setModuleLock(moduleName, locked) {
+      if (!isOwner()) { showToast('केवल Owner मॉड्यूल लॉक कर सकता है', 'fa-lock'); return; }
+      state.settings.moduleLocks = state.settings.moduleLocks || {};
+      state.settings.moduleLocks[moduleName] = !!locked;
+      saveAndSyncState(); applyRoleNavigation(); showToast(locked ? 'मॉड्यूल लॉक किया गया' : 'मॉड्यूल अनलॉक किया गया');
+    }
+    function renderOwnerControls() {
+      const panel = document.getElementById('owner-module-control');
+      if (panel) panel.classList.toggle('hidden', !isOwner());
+      document.querySelectorAll('[data-module-lock]').forEach(el => { el.checked = !!state.settings?.moduleLocks?.[el.dataset.moduleLock]; });
+    }
+    function applyRoleNavigation() {
+      const role = state.user?.role || 'Owner';
+      ['purchases','workers','settings'].forEach(id => { const el=document.getElementById(`nav-${id}`); if(el) el.classList.toggle('hidden', role === 'Salesman' || (role === 'Manager' && id === 'settings')); });
+      ['customers','products','production','purchases','workers','chat'].forEach(id => { const el=document.getElementById(`nav-${id}`); if(el) el.classList.toggle('opacity-40', role !== 'Owner' && !!state.settings?.moduleLocks?.[id]); });
+      renderOwnerControls();
+      const chatNav = document.getElementById('nav-chat'); if (chatNav) chatNav.classList.remove('hidden');
+    }
+    function isOwner() { return (state.user?.role || 'Owner') === 'Owner'; }
+    function isManager() { return (state.user?.role || '') === 'Manager'; }
+    function canAccessTab(tabId) {
+      const role = state.user?.role || 'Owner';
+      if (role === 'Owner') return true;
+      if (role === 'Manager') return tabId !== 'settings' && !state.settings?.moduleLocks?.[tabId];
+      const locks = state.settings?.moduleLocks || {};
+      if (role === 'Salesman' && locks[tabId]) return false;
+      if (tabId === 'purchases' || tabId === 'workers' || tabId === 'settings') return false;
+      if (tabId === 'products') return true;
+      return true;
+    }
     function switchTab(tabId) {
+      if (!canAccessTab(tabId)) { showToast('इस मॉड्यूल का अधिकार Owner ने लॉक किया है', 'fa-lock'); return; }
       document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.nav-tab').forEach(el => {
         el.className = "nav-tab px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition text-slate-300 hover:text-amber-400 hover:bg-slate-800";
@@ -1741,6 +1792,7 @@
       if (activeNav) activeNav.className = "nav-tab active-tab px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition bg-amber-500 text-slate-950";
 
       // Render tab specific components
+      if (tabId === 'settings') renderOwnerControls();
       if (tabId === 'dashboard') renderDashboardWidgets();
       if (tabId === 'new-bill') populateBillingDropdowns();
       if (tabId === 'customers') renderCustomersList();
@@ -1957,25 +2009,35 @@
       }
     }
 
+    function customerSearchLabel(c) { return `${c.shopName || ''} (${c.name || ''}) | ${c.mobile || ''} | ${c.areaName || c.address || ''} | ${c.code || c.id}`; }
+    function productSearchLabel(p) { return `${p.name} | ${p.code || p.id} | स्टॉक ${p.stock ?? 0} | ₹${p.appRate || 0}`; }
     function populateBillingDropdowns() {
-      // Customer Selector
-      const cSelect = document.getElementById('bill-customer-select');
-      cSelect.innerHTML = `<option value="">-- ग्राहक का चयन करें --</option>` + 
-        state.customers.map(c => `<option value="${c.id}">${c.shopName} (${c.name}) - ${c.areaName||''}</option>`).join('');
-
-      // Item Selector
-      const pSelect = document.getElementById('bill-item-select');
-      pSelect.innerHTML = `<option value="">-- उत्पाद चुनें --</option>` +
-        state.products.map(p => `<option value="${p.id}">${p.name} (स्टॉक: ${p.stock}) - ₹${p.appRate}</option>`).join('');
-
-      // Auto Bill ID
+      const cList = document.getElementById('bill-customer-options');
+      const pList = document.getElementById('bill-product-options');
+      if (cList) cList.innerHTML = state.customers.map(c => `<option value="${customerSearchLabel(c).replace(/"/g,'&quot;')}"></option>`).join('');
+      if (pList) pList.innerHTML = state.products.map(p => `<option value="${productSearchLabel(p).replace(/"/g,'&quot;')}"></option>`).join('');
       const autoNum = 1001 + state.bills.length;
       document.getElementById('bill-auto-id').textContent = `BILL-${autoNum}`;
     }
-
+    function onBillingCustomerSearch() {
+      const q = (document.getElementById('bill-customer-select').value || '').toLowerCase();
+      const list = document.getElementById('bill-customer-options');
+      const matches = state.customers.filter(c => [c.name,c.shopName,c.mobile,c.areaName,c.address,c.code,c.id].some(v => String(v||'').toLowerCase().includes(q)));
+      list.innerHTML = matches.slice(0,100).map(c => `<option value="${customerSearchLabel(c).replace(/"/g,'&quot;')}"></option>`).join('');
+      const exact = state.customers.find(c => customerSearchLabel(c) === document.getElementById('bill-customer-select').value);
+      if (exact) onBillingCustomerSelected();
+    }
+    function onBillProductSearch() {
+      const q = (document.getElementById('bill-item-select').value || '').toLowerCase();
+      const list = document.getElementById('bill-product-options');
+      const matches = state.products.filter(p => [p.name,p.code,p.id].some(v => String(v||'').toLowerCase().includes(q)));
+      list.innerHTML = matches.slice(0,100).map(p => `<option value="${productSearchLabel(p).replace(/"/g,'&quot;')}"></option>`).join('');
+      const exact = state.products.find(p => productSearchLabel(p) === document.getElementById('bill-item-select').value);
+      if (exact) { selectedProductId = exact.id; onBillItemChosen(); }
+    }
     function onBillingCustomerSelected() {
-      const cId = document.getElementById('bill-customer-select').value;
-      const cust = state.customers.find(c => c.id === cId);
+      const typed = document.getElementById('bill-customer-select').value;
+      const cust = state.customers.find(c => c.id === typed || customerSearchLabel(c) === typed);
       const infoCard = document.getElementById('bill-selected-cust-info');
 
       if (cust) {
@@ -1992,15 +2054,17 @@
     }
 
     function onBillItemChosen() {
-      const pId = document.getElementById('bill-item-select').value;
-      const prod = state.products.find(p => p.id === pId);
+      const typed = document.getElementById('bill-item-select').value;
+      const prod = state.products.find(p => p.id === typed || productSearchLabel(p) === typed);
+      const pId = prod?.id;
       if (prod) {
         document.getElementById('bill-item-rate').value = prod.appRate || 0;
       }
     }
 
     function addItemToBillCart() {
-      const pId = document.getElementById('bill-item-select').value;
+      const typedProduct = document.getElementById('bill-item-select').value;
+      const pId = state.products.find(p => p.id === typedProduct || productSearchLabel(p) === typedProduct)?.id;
       const qty = parseInt(document.getElementById('bill-item-qty').value) || 1;
       const rate = parseFloat(document.getElementById('bill-item-rate').value) || 0;
 
@@ -2195,6 +2259,7 @@
 
     /* 3. PRINTABLE INVOICE RENDERER */
     function renderPrintableInvoice(bill) {
+      currentInvoiceId = bill.id;
       document.getElementById('inv-bill-no').textContent = bill.id;
       document.getElementById('inv-date').textContent = bill.date;
       document.getElementById('inv-cust-name').textContent = bill.customerName;
@@ -2262,6 +2327,16 @@
         link.href = canvas.toDataURL('image/png');
         link.click();
       });
+    }
+
+    function shareCurrentInvoice() {
+      if (!currentInvoiceId) return showToast('पहले बिल चुनें', 'fa-triangle-exclamation');
+      const bill = state.bills.find(b => b.id === currentInvoiceId);
+      if (!bill) return;
+      const text = `UJJWALJI बिल ${bill.id}\nग्राहक: ${bill.customerName}\nकुल: ₹${bill.netTotal}\nजमा: ₹${bill.paidAmount}\nबाकी: ₹${bill.remainingDues}`;
+      const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      if (navigator.share) navigator.share({title:`UJJWALJI बिल ${bill.id}`, text}).catch(()=>{});
+      else window.open(wa, '_blank');
     }
 
     function shareInvoiceWhatsApp(billId) {
@@ -2404,6 +2479,7 @@
     function handleSaveCustomer(e) {
       e.preventDefault();
       const editId = document.getElementById('cust-edit-id').value;
+      if (editId && !isOwner() && !isManager()) { showToast('Salesman केवल नया ग्राहक बना सकता है', 'fa-lock'); return; }
       const photoUrl = document.getElementById('cust-photo-preview').dataset.url || '';
 
       const customerObj = {
@@ -2439,6 +2515,7 @@
     }
 
     function deleteCustomer(id) {
+      if (!isOwner() && !isManager()) { showToast('Salesman ग्राहक डिलीट नहीं कर सकता', 'fa-lock'); return; }
       if (confirm("क्या आप वाकई इस ग्राहक को हटाना चाहते हैं?")) {
         state.customers = state.customers.filter(c => c.id !== id);
         saveAndSyncState();
@@ -2666,6 +2743,7 @@
     }
 
     function toggleAttendanceQuick(workerId, dateStr, statusVal) {
+      if (!isOwner() && !isManager()) { showToast('हाजिरी एडिट करने का अधिकार नहीं है', 'fa-lock'); return; }
       const worker = state.workers.find(w => w.id === workerId);
       if (!worker) return;
       if (!worker.attendance) worker.attendance = {};
@@ -2683,6 +2761,7 @@
     }
 
     function clearAttendanceQuick(workerId, dateStr) {
+      if (!isOwner() && !isManager()) { showToast('हाजिरी एडिट करने का अधिकार नहीं है', 'fa-lock'); return; }
       const worker = state.workers.find(w => w.id === workerId);
       if (worker && worker.attendance) {
         delete worker.attendance[dateStr];
@@ -2693,6 +2772,7 @@
     }
 
     function openWorkerModal(editId = null) {
+      if (!isOwner() && !isManager()) { showToast('मजदूर प्रबंधन का अधिकार नहीं है', 'fa-lock'); return; }
       document.getElementById('worker-edit-id').value = editId || '';
       document.getElementById('modal-worker-title').textContent = editId ? 'मज़दूर संपादित करें' : 'नया मज़दूर जोड़ें';
 
@@ -2715,6 +2795,7 @@
     }
 
     function handleSaveWorker(e) {
+      if (!isOwner() && !isManager()) { if (e?.preventDefault) e.preventDefault(); showToast('इस कार्य का अधिकार उपलब्ध नहीं है', 'fa-lock'); return; }
       e.preventDefault();
       const editId = document.getElementById('worker-edit-id').value;
 
@@ -2748,6 +2829,7 @@
     }
 
     function deleteWorker(id) {
+      if (!isOwner() && !isManager()) { showToast('मजदूर रिकॉर्ड हटाने का अधिकार नहीं है', 'fa-lock'); return; }
       if (confirm("क्या आप इस मज़दूर को हटाना चाहते हैं?")) {
         state.workers = state.workers.filter(w => w.id !== id);
         saveAndSyncState();
@@ -2767,6 +2849,7 @@
     }
 
     function handleSaveWorkerTrans(e) {
+      if (!isOwner() && !isManager()) { e.preventDefault(); showToast('भुगतान एडिट करने का अधिकार नहीं है', 'fa-lock'); return; }
       e.preventDefault();
       const wId = document.getElementById('wtrans-worker-id').value;
       const type = document.getElementById('wtrans-type').value;
@@ -2924,6 +3007,7 @@
     }
 
     function openPurchaseModal() {
+      if (!isOwner() && !isManager()) { showToast('खरीद का अधिकार नहीं है', 'fa-lock'); return; }
       document.getElementById('pur-supplier-name').value = '';
       document.getElementById('pur-item-details').value = '';
       document.getElementById('pur-total-amount').value = '';
@@ -2932,6 +3016,7 @@
     }
 
     function handleSavePurchase(e) {
+      if (!isOwner() && !isManager()) { if (e?.preventDefault) e.preventDefault(); showToast('इस कार्य का अधिकार उपलब्ध नहीं है', 'fa-lock'); return; }
       e.preventDefault();
       const photoUrl = document.getElementById('pur-photo-preview').dataset.url || '';
       
@@ -2996,6 +3081,7 @@
     }
 
     function handleSaveProduction(e) {
+      if (!isOwner() && !isManager()) { e.preventDefault(); showToast('आप केवल उत्पादन देख सकते हैं', 'fa-lock'); return; }
       e.preventDefault();
       const pId = document.getElementById('prod-product-id').value;
       const qty = parseInt(document.getElementById('prod-qty').value) || 0;
@@ -3106,6 +3192,16 @@
       input.value = "";
     }
 
+    function handleCompanyChatPhoto(event) {
+      const file = event.target.files?.[0]; if (!file) return;
+      if (!file.type.startsWith('image/')) return showToast('केवल फोटो भेजें', 'fa-triangle-exclamation');
+      compressImage(file, 900, 0.62, (dataUrl) => {
+        if (!firebaseDb) return showToast('फोटो भेजने के लिए Firebase कनेक्शन जरूरी है', 'fa-triangle-exclamation');
+        const safeCompanyId = sanitizeKey(state.user.companyId || DEFAULT_COMPANY_ID);
+        firebaseDb.ref(`companies/${safeCompanyId}/chat`).push({ id:`img-${Date.now()}`, senderName:state.user.name, senderMobile:state.user.mobile, senderRole:state.user.role, text:'', image:dataUrl, time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}), timestamp:Date.now() });
+        event.target.value = ''; showToast('फोटो चैट में भेज दी गई');
+      });
+    }
     function renderCompanyChatMessages() {
       const box = document.getElementById('company-chat-messages');
       if (state.companyChat.length === 0) {
@@ -3119,7 +3215,8 @@
           <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
             <div class="max-w-[75%] rounded-2xl p-3 text-xs ${isMe ? 'bg-emerald-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-100 rounded-bl-none'}">
               <p class="text-[10px] font-bold ${isMe ? 'text-emerald-200' : 'text-amber-400'} mb-1">${m.senderName} (${m.senderRole})</p>
-              <p>${m.text}</p>
+              ${m.text ? `<p>${m.text}</p>` : ''}
+              ${m.image ? `<img src="${m.image}" alt="Shared photo" class="mt-2 rounded-lg max-w-full max-h-64 object-contain">` : ''}
               <span class="text-[9px] text-slate-300 block text-right mt-1 opacity-80">${m.time}</span>
             </div>
           </div>
@@ -3187,7 +3284,8 @@
         return `
           <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
             <div class="max-w-[75%] rounded-2xl p-3 text-xs ${isMe ? 'bg-amber-500 text-slate-950 font-medium rounded-br-none' : 'bg-slate-700 text-slate-100 rounded-bl-none'}">
-              <p>${m.text}</p>
+              ${m.text ? `<p>${m.text}</p>` : ''}
+              ${m.image ? `<img src="${m.image}" alt="Shared photo" class="mt-2 rounded-lg max-w-full max-h-64 object-contain">` : ''}
               <span class="text-[9px] text-slate-400 block text-right mt-1">${m.time}</span>
             </div>
           </div>
