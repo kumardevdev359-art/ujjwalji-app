@@ -87,7 +87,7 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-xl font-black tracking-tight gold-text-gradient uppercase">UJJWALJI</h1>
-            <span class="text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded uppercase hidden sm:inline-block">UDYAM-UP-06-0025629</span>
+            <span class="text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded uppercase hidden sm:inline-block">UDYAM-UP-06-0025619</span>
           </div>
           <p class="text-[11px] text-amber-200/70 font-medium italic">Purity Is Our Identity</p>
         </div>
@@ -337,7 +337,10 @@
           <!-- Saved Customer Selector -->
           <div id="bill-cust-saved-box">
             <label class="block text-xs font-semibold text-slate-300 mb-1">ग्राहक खोजें या चुनें</label>
-            <input id="bill-customer-select" list="bill-customer-options" oninput="onBillingCustomerSearch()" onchange="onBillingCustomerSelected()" autocomplete="off" placeholder="नाम, मोबाइल, पता या Customer ID टाइप करें..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500"><datalist id="bill-customer-options"></datalist>
+            <div class="relative">
+              <input id="bill-customer-select" type="search" oninput="onBillingCustomerSearch()" onfocus="onBillingCustomerSearch()" onkeydown="handleBillCustomerKeydown(event)" autocomplete="off" placeholder="नाम, मोबाइल, पता या Customer ID टाइप करें..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
+              <div id="bill-customer-results" class="hidden absolute z-30 left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-600 bg-slate-900 shadow-2xl"></div>
+            </div>
           </div>
 
           <!-- Walk-in Customer Form -->
@@ -375,7 +378,10 @@
           
           <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 bg-slate-900/40 p-3 rounded-lg border border-slate-700/50">
             <div class="sm:col-span-5">
-              <input id="bill-item-select" list="bill-product-options" oninput="onBillProductSearch()" onchange="onBillItemChosen()" autocomplete="off" placeholder="उत्पाद का नाम या कोड टाइप करें..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500"><datalist id="bill-product-options"></datalist>
+              <div class="relative">
+                <input id="bill-item-select" type="search" oninput="onBillProductSearch()" onfocus="onBillProductSearch()" onkeydown="handleBillProductKeydown(event)" autocomplete="off" placeholder="उत्पाद का नाम या कोड टाइप करें..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
+                <div id="bill-product-results" class="hidden absolute z-30 left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-600 bg-slate-900 shadow-2xl"></div>
+              </div>
             </div>
             <div class="sm:col-span-2">
               <input type="number" id="bill-item-qty" min="1" value="1" placeholder="मात्रा" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
@@ -989,7 +995,14 @@
               <img id="cust-photo-preview" class="w-full h-full object-cover hidden">
               <i id="cust-photo-icon" class="fa-solid fa-user text-slate-500"></i>
             </div>
-            <input type="file" id="cust-photo-file" accept="image/*" onchange="handleCustPhotoUpload(event)" class="text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:bg-slate-800 file:text-amber-400">
+            <div class="flex flex-wrap gap-2">
+              <button type="button" onclick="document.getElementById('cust-photo-camera').click()" class="px-3 py-2 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-300 text-xs font-bold"><i class="fa-solid fa-camera"></i> कैमरा</button>
+              <button type="button" onclick="document.getElementById('cust-photo-gallery').click()" class="px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 text-xs font-bold"><i class="fa-regular fa-images"></i> गैलरी</button>
+              <button type="button" onclick="pickCustomerFromPhone()" class="px-3 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold"><i class="fa-solid fa-address-book"></i> मोबाइल कॉन्टैक्ट</button>
+            </div>
+            <input type="file" id="cust-photo-camera" accept="image/*" capture="environment" onchange="handleCustPhotoUpload(event)" class="hidden">
+            <input type="file" id="cust-photo-gallery" accept="image/*" onchange="handleCustPhotoUpload(event)" class="hidden">
+            <p class="text-[10px] text-slate-500 mt-1">कैमरा या गैलरी से फोटो चुनें। मोबाइल कॉन्टैक्ट चुनने के लिए समर्थित ब्राउज़र की अनुमति आवश्यक है।</p>
           </div>
         </div>
 
@@ -1263,7 +1276,8 @@
           <button onclick="downloadInvoicePNG()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">
             <i class="fa-solid fa-image"></i> PNG डाउनलोड
           </button>
-          <button onclick="shareCurrentInvoice()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"><i class="fa-solid fa-share-nodes"></i> बिल शेयर</button>
+          <button onclick="shareInvoiceReceiptWhatsApp()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold"><i class="fa-brands fa-whatsapp"></i> WhatsApp रिसिप्ट</button>
+          <button onclick="shareCurrentInvoice()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold"><i class="fa-solid fa-share-nodes"></i> अन्य शेयर</button>
           <button onclick="window.print()" class="gold-gradient text-slate-950 px-3 py-1.5 rounded-lg text-xs font-bold">
             <i class="fa-solid fa-print"></i> प्रिंट / PDF
           </button>
@@ -1282,7 +1296,7 @@
             </div>
             <div>
               <h1 class="text-2xl font-black text-slate-900 tracking-tight">UJJWALJI</h1>
-              <p class="text-xs font-bold text-amber-600 uppercase tracking-widest">UDYAM-UP-06-0025629</p>
+              <p class="text-xs font-bold text-amber-600 uppercase tracking-widest">UDYAM-UP-06-0025619</p>
               <p class="text-[11px] text-slate-500 italic">Purity Is Our Identity</p>
             </div>
           </div>
@@ -1462,6 +1476,11 @@
     let currentInvoiceId = null;
     let selectedProductId = null;
 
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('#bill-customer-results') && event.target.id !== 'bill-customer-select') document.getElementById('bill-customer-results')?.classList.add('hidden');
+      if (!event.target.closest('#bill-product-results') && event.target.id !== 'bill-item-select') document.getElementById('bill-product-results')?.classList.add('hidden');
+    });
+
     /* ==========================================================================
        INITIALIZATION & STORAGE HELPERS
        ========================================================================== */
@@ -1570,15 +1589,32 @@
     }
 
     function handleCustPhotoUpload(e) {
-      const file = e.target.files[0];
-      if (file) {
-        compressImage(file, 180, 0.65, (dataUrl) => {
-          document.getElementById('cust-photo-preview').src = dataUrl;
-          document.getElementById('cust-photo-preview').classList.remove('hidden');
-          document.getElementById('cust-photo-icon').classList.add('hidden');
-          document.getElementById('cust-photo-preview').dataset.url = dataUrl;
-        });
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (!file.type || !file.type.startsWith('image/')) { showToast('कृपया फोटो फाइल चुनें', 'fa-triangle-exclamation'); return; }
+      compressImage(file, 360, 0.72, (dataUrl) => {
+        const preview = document.getElementById('cust-photo-preview');
+        preview.src = dataUrl; preview.dataset.url = dataUrl;
+        preview.classList.remove('hidden'); document.getElementById('cust-photo-icon').classList.add('hidden');
+        showToast('ग्राहक की फोटो जोड़ दी गई');
+      });
+      e.target.value = '';
+    }
+    async function pickCustomerFromPhone() {
+      if (!('contacts' in navigator) || !navigator.contacts.select) {
+        showToast('इस ब्राउज़र में Contact Picker उपलब्ध नहीं है। मोबाइल कॉन्टैक्ट से नंबर कॉपी करके मोबाइल फ़ील्ड में पेस्ट करें।', 'fa-circle-info'); return;
       }
+      try {
+        const contacts = await navigator.contacts.select(['name','tel'], {multiple:false});
+        if (!contacts || !contacts.length) return;
+        const c = contacts[0];
+        const name = Array.isArray(c.name) ? c.name[0] : c.name;
+        const tel = Array.isArray(c.tel) ? c.tel[0] : c.tel;
+        if (name && !document.getElementById('cust-name').value) document.getElementById('cust-name').value = name;
+        if (tel) document.getElementById('cust-mobile').value = String(tel).replace(/\D/g,'').slice(-10);
+        if (name && !document.getElementById('cust-shop-name').value) document.getElementById('cust-shop-name').value = name;
+        showToast('मोबाइल कॉन्टैक्ट से विवरण भर दिया गया');
+      } catch (err) { if (err.name !== 'AbortError') showToast('कॉन्टैक्ट पढ़ने की अनुमति नहीं मिली', 'fa-triangle-exclamation'); }
     }
 
     function handlePurPhotoUpload(e) {
@@ -2011,105 +2047,126 @@
 
     function customerSearchLabel(c) { return `${c.shopName || ''} (${c.name || ''}) | ${c.mobile || ''} | ${c.areaName || c.address || ''} | ${c.code || c.id}`; }
     function productSearchLabel(p) { return `${p.name} | ${p.code || p.id} | स्टॉक ${p.stock ?? 0} | ₹${p.appRate || 0}`; }
+    function escapeHTML(value) { return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+    let billCustomerMatches = [], billProductMatches = [], billCustomerFocusIndex = -1, billProductFocusIndex = -1;
     function populateBillingDropdowns() {
-      const cList = document.getElementById('bill-customer-options');
-      const pList = document.getElementById('bill-product-options');
-      if (cList) cList.innerHTML = state.customers.map(c => `<option value="${customerSearchLabel(c).replace(/"/g,'&quot;')}"></option>`).join('');
-      if (pList) pList.innerHTML = state.products.map(p => `<option value="${productSearchLabel(p).replace(/"/g,'&quot;')}"></option>`).join('');
       const autoNum = 1001 + state.bills.length;
-      document.getElementById('bill-auto-id').textContent = `BILL-${autoNum}`;
+      const autoEl = document.getElementById('bill-auto-id');
+      if (autoEl) autoEl.textContent = `BILL-${autoNum}`;
     }
     function onBillingCustomerSearch() {
-      const q = (document.getElementById('bill-customer-select').value || '').toLowerCase();
-      const list = document.getElementById('bill-customer-options');
-      const matches = state.customers.filter(c => [c.name,c.shopName,c.mobile,c.areaName,c.address,c.code,c.id].some(v => String(v||'').toLowerCase().includes(q)));
-      list.innerHTML = matches.slice(0,100).map(c => `<option value="${customerSearchLabel(c).replace(/"/g,'&quot;')}"></option>`).join('');
-      const exact = state.customers.find(c => customerSearchLabel(c) === document.getElementById('bill-customer-select').value);
-      if (exact) onBillingCustomerSelected();
+      const input = document.getElementById('bill-customer-select');
+      const panel = document.getElementById('bill-customer-results');
+      if (!input || !panel) return;
+      const q = input.value.trim().toLocaleLowerCase();
+      selectedCustomerId = null; document.getElementById('bill-selected-cust-info').classList.add('hidden');
+      billCustomerMatches = state.customers.filter(c => [c.name,c.shopName,c.mobile,c.areaName,c.address,c.code,c.id].some(v => String(v||'').toLocaleLowerCase().includes(q))).slice(0,60);
+      billCustomerFocusIndex = -1;
+      panel.innerHTML = billCustomerMatches.length ? billCustomerMatches.map((c,i)=>`<button type="button" data-index="${i}" onclick="chooseBillCustomer('${String(c.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')" class="w-full text-left px-3 py-2.5 border-b border-slate-800 hover:bg-slate-800 focus:bg-slate-800"><span class="block text-sm font-bold text-amber-300">${escapeHTML(c.shopName || c.name || 'ग्राहक')}</span><span class="block text-xs text-slate-200">${escapeHTML(c.name || '')} · ${escapeHTML(c.mobile || 'मोबाइल नहीं')}</span><span class="block text-[10px] text-slate-400">${escapeHTML(c.areaName || c.address || '')} · ${escapeHTML(c.code || c.id)}</span></button>`).join('') : `<div class="p-3 text-xs text-slate-400">कोई ग्राहक नहीं मिला। ग्राहक मॉड्यूल से नया ग्राहक जोड़ें।</div>`;
+      panel.classList.remove('hidden');
+      if (!q) panel.querySelectorAll('button').forEach((b,i)=>{ if(i>14)b.classList.add('hidden'); });
+      const exact = state.customers.find(c => c.id === input.value.trim() || c.code === input.value.trim() || c.mobile === input.value.trim());
+      if (exact) chooseBillCustomer(exact.id, false);
     }
-    function onBillProductSearch() {
-      const q = (document.getElementById('bill-item-select').value || '').toLowerCase();
-      const list = document.getElementById('bill-product-options');
-      const matches = state.products.filter(p => [p.name,p.code,p.id].some(v => String(v||'').toLowerCase().includes(q)));
-      list.innerHTML = matches.slice(0,100).map(p => `<option value="${productSearchLabel(p).replace(/"/g,'&quot;')}"></option>`).join('');
-      const exact = state.products.find(p => productSearchLabel(p) === document.getElementById('bill-item-select').value);
-      if (exact) { selectedProductId = exact.id; onBillItemChosen(); }
+    function chooseBillCustomer(id, closePanel=true) {
+      const cust = state.customers.find(c => c.id === id);
+      if (!cust) return;
+      selectedCustomerId = cust.id;
+      const input = document.getElementById('bill-customer-select');
+      input.value = customerSearchLabel(cust);
+      document.getElementById('bill-info-cust-name').textContent = `${cust.shopName || ''} (${cust.name || ''})`;
+      document.getElementById('bill-info-cust-phone').textContent = cust.mobile ? `Ph: ${cust.mobile}` : '';
+      document.getElementById('bill-info-cust-area').textContent = `${cust.areaName||'-'} (${cust.areaCode||''})`;
+      document.getElementById('bill-info-cust-dues').textContent = `₹${cust.dues||0}`;
+      document.getElementById('bill-selected-cust-info').classList.remove('hidden');
+      if (closePanel) document.getElementById('bill-customer-results').classList.add('hidden');
+    }
+    function handleBillCustomerKeydown(e) {
+      const panel = document.getElementById('bill-customer-results');
+      if (e.key === 'Escape') { panel.classList.add('hidden'); return; }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault(); billCustomerFocusIndex = Math.max(0, Math.min(billCustomerMatches.length-1, billCustomerFocusIndex + (e.key==='ArrowDown'?1:-1)));
+        panel.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('bg-slate-700',i===billCustomerFocusIndex));
+      } else if (e.key === 'Enter' && billCustomerMatches[billCustomerFocusIndex]) { e.preventDefault(); chooseBillCustomer(billCustomerMatches[billCustomerFocusIndex].id); }
     }
     function onBillingCustomerSelected() {
-      const typed = document.getElementById('bill-customer-select').value;
-      const cust = state.customers.find(c => c.id === typed || customerSearchLabel(c) === typed);
-      const infoCard = document.getElementById('bill-selected-cust-info');
-
-      if (cust) {
-        selectedCustomerId = cust.id;
-        document.getElementById('bill-info-cust-name').textContent = `${cust.shopName} (${cust.name})`;
-        document.getElementById('bill-info-cust-phone').textContent = cust.mobile ? `Ph: ${cust.mobile}` : '';
-        document.getElementById('bill-info-cust-area').textContent = `${cust.areaName||'-'} (${cust.areaCode||''})`;
-        document.getElementById('bill-info-cust-dues').textContent = `₹${cust.dues||0}`;
-        infoCard.classList.remove('hidden');
-      } else {
-        selectedCustomerId = null;
-        infoCard.classList.add('hidden');
-      }
+      const typed = document.getElementById('bill-customer-select').value.trim();
+      const cust = state.customers.find(c => c.id === typed || c.code === typed || c.mobile === typed || customerSearchLabel(c) === typed);
+      if (cust) chooseBillCustomer(cust.id); else { selectedCustomerId = null; document.getElementById('bill-selected-cust-info').classList.add('hidden'); }
     }
-
+    function onBillProductSearch() {
+      const input = document.getElementById('bill-item-select');
+      const panel = document.getElementById('bill-product-results');
+      if (!input || !panel) return;
+      const q = input.value.trim().toLocaleLowerCase();
+      selectedProductId = null; document.getElementById('bill-item-rate').value = '';
+      billProductMatches = state.products.filter(p => [p.name,p.code,p.id].some(v => String(v||'').toLocaleLowerCase().includes(q))).slice(0,80);
+      billProductFocusIndex = -1;
+      panel.innerHTML = billProductMatches.length ? billProductMatches.map((p,i)=>`<button type="button" onclick="chooseBillProduct('${String(p.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')" class="w-full text-left px-3 py-2.5 border-b border-slate-800 hover:bg-slate-800"><span class="block text-sm font-bold text-amber-300">${escapeHTML(p.name)}</span><span class="block text-xs text-slate-300">कोड: ${escapeHTML(p.code || p.id)} · स्टॉक: ${escapeHTML(p.stock ?? 0)} · रेट: ₹${escapeHTML(p.appRate || 0)} / ${escapeHTML(p.unit || 'Unit')}</span></button>`).join('') : `<div class="p-3 text-xs text-slate-400">उत्पाद नहीं मिला। उत्पाद मॉड्यूल में पहले जोड़ें।</div>`;
+      panel.classList.remove('hidden');
+      const exact = state.products.find(p => p.id === input.value.trim() || p.code === input.value.trim());
+      if (exact) chooseBillProduct(exact.id, false);
+    }
+    function chooseBillProduct(id, closePanel=true) {
+      const prod = state.products.find(p => p.id === id);
+      if (!prod) return;
+      selectedProductId = prod.id;
+      document.getElementById('bill-item-select').value = `${prod.name} (${prod.code || prod.id})`;
+      document.getElementById('bill-item-rate').value = Number(prod.appRate || 0);
+      if (closePanel) document.getElementById('bill-product-results').classList.add('hidden');
+      document.getElementById('bill-item-qty').focus();
+    }
+    function handleBillProductKeydown(e) {
+      const panel = document.getElementById('bill-product-results');
+      if (e.key === 'Escape') { panel.classList.add('hidden'); return; }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault(); billProductFocusIndex = Math.max(0, Math.min(billProductMatches.length-1, billProductFocusIndex + (e.key==='ArrowDown'?1:-1)));
+        panel.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('bg-slate-700',i===billProductFocusIndex));
+      } else if (e.key === 'Enter') { e.preventDefault(); if (billProductMatches[billProductFocusIndex]) chooseBillProduct(billProductMatches[billProductFocusIndex].id); else if (billProductMatches.length === 1) chooseBillProduct(billProductMatches[0].id); else if (selectedProductId) addItemToBillCart(); else if (billProductMatches.length) { billProductFocusIndex = 0; panel.querySelector('button')?.classList.add('bg-slate-700'); } }
+    }
     function onBillItemChosen() {
-      const typed = document.getElementById('bill-item-select').value;
-      const prod = state.products.find(p => p.id === typed || productSearchLabel(p) === typed);
-      const pId = prod?.id;
-      if (prod) {
-        document.getElementById('bill-item-rate').value = prod.appRate || 0;
-      }
+      const typed = document.getElementById('bill-item-select').value.trim();
+      const prod = state.products.find(p => p.id === typed || p.code === typed || p.name.toLocaleLowerCase() === typed.toLocaleLowerCase());
+      if (prod) chooseBillProduct(prod.id);
     }
 
     function addItemToBillCart() {
-      const typedProduct = document.getElementById('bill-item-select').value;
-      const pId = state.products.find(p => p.id === typedProduct || productSearchLabel(p) === typedProduct)?.id;
-      const qty = parseInt(document.getElementById('bill-item-qty').value) || 1;
-      const rate = parseFloat(document.getElementById('bill-item-rate').value) || 0;
-
-      const prod = state.products.find(p => p.id === pId);
-      if (!prod) {
-        showToast("कृपया उत्पाद चुनें!", "fa-triangle-exclamation");
-        return;
-      }
-
-      cartItems.push({
-        productId: prod.id,
-        name: prod.name,
-        qty: qty,
-        rate: rate,
-        total: qty * rate
-      });
-
-      renderBillCart();
+      const typedProduct = document.getElementById('bill-item-select').value.trim();
+      const prod = state.products.find(p => p.id === selectedProductId || p.id === typedProduct || p.code === typedProduct || p.name.toLocaleLowerCase() === typedProduct.toLocaleLowerCase() || `${p.name} (${p.code || p.id})` === typedProduct);
+      const qty = Number(document.getElementById('bill-item-qty').value) || 1;
+      const rate = Number(document.getElementById('bill-item-rate').value);
+      if (!prod) { showToast('लिस्ट से सही उत्पाद चुनें!', 'fa-triangle-exclamation'); document.getElementById('bill-item-select').focus(); return; }
+      if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(rate) || rate < 0) { showToast('मात्रा और दर सही भरें!', 'fa-triangle-exclamation'); return; }
+      const existing = cartItems.find(i => i.productId === prod.id && Number(i.rate) === rate);
+      if (existing) { existing.qty = Number(existing.qty) + qty; existing.total = existing.qty * existing.rate; }
+      else cartItems.push({ productId: prod.id, name: prod.name, qty, rate, total: qty * rate, unit: prod.unit || 'Unit' });
+      renderBillCart(); calculateBillTotals();
+      document.getElementById('bill-item-select').value = '';
+      document.getElementById('bill-item-qty').value = '1';
+      document.getElementById('bill-item-rate').value = '';
+      selectedProductId = null;
+      document.getElementById('bill-item-select').focus();
+    }
+    function updateCartItem(index, field, value) {
+      const item = cartItems[index]; if (!item) return;
+      const n = Number(value);
+      if (!Number.isFinite(n) || n < 0 || (field === 'qty' && n <= 0)) return;
+      item[field] = n; item.total = Number(item.qty) * Number(item.rate);
+      const totalCell = document.getElementById(`cart-line-total-${index}`);
+      if (totalCell) totalCell.textContent = `₹${item.total.toFixed(2).replace(/\.00$/,'')}`;
       calculateBillTotals();
     }
-
-    function removeCartItem(index) {
-      cartItems.splice(index, 1);
-      renderBillCart();
-      calculateBillTotals();
-    }
-
+    function removeCartItem(index) { cartItems.splice(index, 1); renderBillCart(); calculateBillTotals(); }
     function renderBillCart() {
       const tbody = document.getElementById('bill-cart-items-body');
-      if (cartItems.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500 italic">कोई सामान नहीं जोड़ा गया</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = cartItems.map((item, idx) => `
-        <tr>
-          <td class="p-2.5 font-bold text-slate-100">${item.name}</td>
-          <td class="p-2.5 text-center font-mono">${item.qty}</td>
-          <td class="p-2.5 text-right font-mono">₹${item.rate}</td>
-          <td class="p-2.5 text-right font-mono font-bold text-amber-400">₹${item.total}</td>
-          <td class="p-2.5 text-center">
-            <button type="button" onclick="removeCartItem(${idx})" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash-can"></i></button>
-          </td>
-        </tr>
-      `).join('');
+      if (!cartItems.length) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500 italic">कोई सामान नहीं जोड़ा गया</td></tr>`; return; }
+      tbody.innerHTML = cartItems.map((item, idx) => `<tr>
+        <td class="p-2.5 font-bold text-slate-100">${escapeHTML(item.name)}<div class="text-[10px] text-slate-500">${escapeHTML(item.unit || '')}</div></td>
+        <td class="p-2 text-center"><input aria-label="मात्रा" type="number" min="0.01" step="any" value="${Number(item.qty)}" onchange="updateCartItem(${idx},'qty',this.value)" class="w-20 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-center text-slate-100"></td>
+        <td class="p-2 text-right"><input aria-label="दर" type="number" min="0" step="any" value="${Number(item.rate)}" onchange="updateCartItem(${idx},'rate',this.value)" class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-right text-slate-100"></td>
+        <td id="cart-line-total-${idx}" class="p-2.5 text-right font-mono font-bold text-amber-400">₹${Number(item.total).toFixed(2).replace(/\.00$/,'')}</td>
+        <td class="p-2.5 text-center"><button type="button" onclick="removeCartItem(${idx})" class="text-rose-400 hover:text-rose-300" aria-label="हटाएँ"><i class="fa-solid fa-trash-can"></i></button></td>
+      </tr>`).join('');
     }
 
     function applyPredefinedOffer(tag, val) {
@@ -2329,21 +2386,58 @@
       });
     }
 
-    function shareCurrentInvoice() {
-      if (!currentInvoiceId) return showToast('पहले बिल चुनें', 'fa-triangle-exclamation');
-      const bill = state.bills.find(b => b.id === currentInvoiceId);
-      if (!bill) return;
-      const text = `UJJWALJI बिल ${bill.id}\nग्राहक: ${bill.customerName}\nकुल: ₹${bill.netTotal}\nजमा: ₹${bill.paidAmount}\nबाकी: ₹${bill.remainingDues}`;
-      const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
-      if (navigator.share) navigator.share({title:`UJJWALJI बिल ${bill.id}`, text}).catch(()=>{});
-      else window.open(wa, '_blank');
+    async function createInvoiceReceiptFile(bill) {
+      if (typeof html2canvas !== 'function') throw new Error('Receipt image library is not loaded');
+      renderPrintableInvoice(bill);
+      await new Promise(resolve => setTimeout(resolve, 350));
+      const canvas = await html2canvas(document.getElementById('printable-invoice'), {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false});
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('Receipt image could not be created');
+      return new File([blob], `UJJWALJI_Receipt_${bill.id}.png`, {type:'image/png'});
     }
-
+    function invoiceShareText(bill) {
+      const lines = bill.items.map((it,i)=>`${i+1}. ${it.name} — ${it.qty} × ₹${it.rate} = ₹${it.total}`).join('\n');
+      return `*UJJWALJI — बिल रिसिप्ट*\nबिल: ${bill.id}\nतारीख: ${bill.date}\nग्राहक: ${bill.customerName}\n${lines}\nकुल: ₹${bill.netTotal}\nजमा: ₹${bill.paidAmount}\nबाकी: ₹${bill.remainingDues}\n\nधन्यवाद!`;
+    }
+    async function shareCurrentInvoice() {
+      const bill = state.bills.find(b => b.id === currentInvoiceId);
+      if (!bill) return showToast('पहले बिल चुनें', 'fa-triangle-exclamation');
+      try {
+        const file = await createInvoiceReceiptFile(bill);
+        if (navigator.canShare && navigator.canShare({files:[file]}) && navigator.share) {
+          await navigator.share({title:`UJJWALJI बिल ${bill.id}`, text:invoiceShareText(bill), files:[file]});
+        } else if (navigator.share) {
+          await navigator.share({title:`UJJWALJI बिल ${bill.id}`, text:invoiceShareText(bill)});
+          showToast('शेयर मेन्यू खुला। पूरी रिसिप्ट PNG डाउनलोड से भी भेज सकते हैं।');
+        } else {
+          const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click(); URL.revokeObjectURL(a.href);
+          showToast('रिसिप्ट PNG डाउनलोड हुई; अब WhatsApp में अटैच करें');
+        }
+      } catch(err) { if (err.name !== 'AbortError') { console.error(err); showToast('रिसिप्ट शेयर नहीं हो सकी। PNG डाउनलोड करके WhatsApp में भेजें।','fa-triangle-exclamation'); } }
+    }
+    async function shareInvoiceReceiptWhatsApp() {
+      const bill = state.bills.find(b => b.id === currentInvoiceId);
+      if (!bill) return showToast('पहले बिल चुनें', 'fa-triangle-exclamation');
+      const text = invoiceShareText(bill);
+      try {
+        const file = await createInvoiceReceiptFile(bill);
+        if (navigator.canShare && navigator.canShare({files:[file]}) && navigator.share) {
+          await navigator.share({title:`WhatsApp पर UJJWALJI बिल ${bill.id}`, text, files:[file]});
+          return;
+        }
+        const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href),30000);
+        const phone = String(bill.customerPhone || '').replace(/\D/g,'');
+        const waUrl = `https://wa.me/${phone ? (phone.length===10?'91'+phone:phone) : ''}?text=${encodeURIComponent(text+'\n\nपूरी बिल रिसिप्ट PNG फाइल डाउनलोड हुई है। कृपया इसे WhatsApp में अटैच करें।')}`;
+        window.open(waUrl, '_blank');
+        showToast('रिसिप्ट डाउनलोड हुई; WhatsApp में PNG अटैच करें');
+      } catch(err) { if (err.name !== 'AbortError') { console.error(err); showToast('WhatsApp शेयर उपलब्ध नहीं हुआ। PNG डाउनलोड करके भेजें।','fa-triangle-exclamation'); } }
+    }
     function shareInvoiceWhatsApp(billId) {
       const bill = state.bills.find(b => b.id === billId);
       if (!bill) return;
-      const msg = `*UJJWALJI (UDYAM-UP-06-0025629)*\n*Tax Invoice:* ${bill.id}\n*Customer:* ${bill.customerName}\n*Net Total:* ₹${bill.netTotal}\n*Paid:* ₹${bill.paidAmount}\n*Remaining Dues:* ₹${bill.remainingDues}\n\nThank you for doing business with us!`;
-      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      const phone = String(bill.customerPhone || '').replace(/\D/g,'');
+      const url = `https://wa.me/${phone ? (phone.length===10?'91'+phone:phone) : ''}?text=${encodeURIComponent(invoiceShareText(bill))}`;
       window.open(url, '_blank');
     }
 
@@ -2438,7 +2532,12 @@
     }
 
     function openCustomerModal(editId = null) {
-      document.getElementById('cust-edit-id').value = editId || '';
+      const photoPreviewReset = document.getElementById('cust-photo-preview');
+      photoPreviewReset.dataset.url = ''; photoPreviewReset.removeAttribute('src'); photoPreviewReset.classList.add('hidden');
+      document.getElementById('cust-photo-icon').classList.remove('hidden');
+      document.getElementById('cust-photo-file')?.value && (document.getElementById('cust-photo-file').value = '');
+      document.getElementById('cust-photo-camera').value = ''; document.getElementById('cust-photo-gallery').value = '';
+      document.getElementById('cust-edit-id').value = editId || ''; 
       document.getElementById('modal-customer-title').textContent = editId ? 'ग्राहक विवरण संपादित करें' : 'नया ग्राहक जोड़ें';
       
       if (editId) {
@@ -2455,6 +2554,7 @@
           document.getElementById('cust-gps-coords').value = c.gps || '';
           if (c.photo) {
             document.getElementById('cust-photo-preview').src = c.photo;
+            document.getElementById('cust-photo-preview').dataset.url = c.photo;
             document.getElementById('cust-photo-preview').classList.remove('hidden');
             document.getElementById('cust-photo-icon').classList.add('hidden');
           }
@@ -2470,6 +2570,8 @@
         document.getElementById('cust-hanger-target').value = 60;
         document.getElementById('cust-gps-coords').value = '';
         document.getElementById('cust-photo-preview').classList.add('hidden');
+        document.getElementById('cust-photo-preview').removeAttribute('src');
+        document.getElementById('cust-photo-preview').dataset.url = '';
         document.getElementById('cust-photo-icon').classList.remove('hidden');
       }
 
@@ -2480,7 +2582,8 @@
       e.preventDefault();
       const editId = document.getElementById('cust-edit-id').value;
       if (editId && !isOwner() && !isManager()) { showToast('Salesman केवल नया ग्राहक बना सकता है', 'fa-lock'); return; }
-      const photoUrl = document.getElementById('cust-photo-preview').dataset.url || '';
+      const photoPreview = document.getElementById('cust-photo-preview');
+      const photoUrl = photoPreview.dataset.url || (editId ? (state.customers.find(c=>c.id===editId)?.photo || '') : '');
 
       const customerObj = {
         id: editId || `cust-${Date.now()}`,
