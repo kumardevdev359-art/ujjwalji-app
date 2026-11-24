@@ -135,6 +135,9 @@
         <button onclick="switchTab('customers')" id="nav-customers" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition text-slate-300 hover:text-amber-400 hover:bg-slate-800">
           <i class="fa-solid fa-users"></i> ग्राहक (60-Hanger)
         </button>
+        <button onclick="switchTab('area-intel')" id="nav-area-intel" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition text-slate-300 hover:text-amber-400 hover:bg-slate-800">
+          <i class="fa-solid fa-map-location-dot"></i> एरिया इंटेलिजेंस
+        </button>
         <button onclick="switchTab('products')" id="nav-products" class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition text-slate-300 hover:text-amber-400 hover:bg-slate-800">
           <i class="fa-solid fa-boxes-stacked"></i> स्टॉक व आइटम
         </button>
@@ -540,6 +543,39 @@
       <div id="customers-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- Rendered JS -->
       </div>
+    </section>
+
+    <!-- AREA INTELLIGENCE & LIVE BUSINESS NETWORK -->
+    <section id="view-area-intel" class="tab-view space-y-5 hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-amber-400 flex items-center gap-2"><i class="fa-solid fa-map-location-dot"></i> एरिया इंटेलिजेंस & बिज़नेस नेटवर्क</h2>
+          <p class="text-xs text-slate-400">मौजूदा ग्राहक रिकॉर्ड के क्षेत्र, पिनकोड और बकाया के आधार पर दुकानें खोजें</p>
+        </div>
+        <button onclick="renderAreaIntelligence()" class="px-3 py-2 rounded-lg border border-slate-600 bg-slate-800 text-xs font-bold"><i class="fa-solid fa-rotate"></i> रिफ्रेश</button>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="rounded-xl border border-slate-700 bg-slate-800 p-3"><small class="text-slate-400">कुल दुकानें</small><b id="area-kpi-total" class="block text-xl text-white">0</b></div>
+        <div class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3"><small class="text-rose-300">कुल बकाया</small><b id="area-kpi-dues" class="block text-xl text-rose-300">₹0</b></div>
+        <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3"><small class="text-emerald-300">क्लियर खाते</small><b id="area-kpi-clear" class="block text-xl text-emerald-300">0</b></div>
+        <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3"><small class="text-amber-300">कुल क्षेत्र</small><b id="area-kpi-areas" class="block text-xl text-amber-300">0</b></div>
+      </div>
+      <div class="rounded-xl border border-slate-700 bg-slate-800/70 p-3 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <input id="area-intel-search" oninput="renderAreaIntelligence()" type="search" placeholder="दुकान, ग्राहक, मोबाइल, एरिया, पिनकोड खोजें…" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white">
+          <select id="area-intel-area" onchange="renderAreaIntelligence()" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white"><option value="">सभी क्षेत्र</option></select>
+          <select id="area-intel-status" onchange="renderAreaIntelligence()" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white">
+            <option value="all">सभी खाते</option><option value="due">बकाया वाले</option><option value="clear">क्लियर खाते</option>
+          </select>
+        </div>
+        <div class="flex flex-wrap gap-3 text-[11px] text-slate-400">
+          <span><i class="fa-solid fa-circle text-rose-400"></i> बकाया</span>
+          <span><i class="fa-solid fa-circle text-emerald-400"></i> क्लियर</span>
+          <span><i class="fa-solid fa-circle text-blue-400"></i> नया ग्राहक (रिकॉर्ड के आधार पर)</span>
+        </div>
+      </div>
+      <div id="area-intel-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+      <p class="text-[11px] text-slate-500 border-t border-slate-800 pt-3">ध्यान दें: यह स्क्रीन केवल ऐप में पहले से दर्ज ग्राहक/दुकानदार रिकॉर्ड दिखाती है। कर्मचारी की लाइव लोकेशन या आसपास मौजूदगी का पता बिना स्पष्ट अनुमति और लोकेशन डेटा के नहीं लगाया जाता।</p>
     </section>
 
     <!-- 4. PRODUCTS & STOCK VIEW -->
@@ -1710,114 +1746,289 @@
     /* ==========================================================================
        FIREBASE REALTIME DATABASE SYNC ENGINE (Strict Pathing & Guard)
        ========================================================================== */
-    function initFirebaseConnection() {
-      const url = state.settings.firebaseUrl || DEFAULT_FIREBASE_URL;
-      const safeCompanyId = sanitizeKey(state.user?.companyId || DEFAULT_COMPANY_ID);
+    // Multi-device sync foundation: serialized RTDB transaction + record-level merge.
+    // Financial append-only records are merged by immutable IDs; mutable-field collisions are
+    // retained in a local conflict inbox instead of silently overwriting another device.
+    let syncInFlight = false;
+    let syncRequestedAgain = false;
+    let syncBaseSnapshot = null;
+    let syncListenerAttached = false;
+    let syncDeviceId = null;
+    let lastRemoteFingerprint = '';
+    let customerPaymentSaving = false;
+    let lastCustomerPaymentSubmitAt = 0;
 
+    function getSyncDeviceId() {
+      const key = 'ujjwalji_device_id_v1';
+      let id = localStorage.getItem(key);
+      if (!id) {
+        id = 'dev-' + (window.crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)));
+        localStorage.setItem(key, id);
+      }
+      return id;
+    }
+    function getSyncBaseKey() { return getStorageKey() + '_syncbase_v1'; }
+    function getSyncPendingKey() { return getStorageKey() + '_syncpending_v1'; }
+    function getSyncConflictKey() { return getStorageKey() + '_syncconflicts_v1'; }
+    function readSyncBase() {
+      try { return JSON.parse(localStorage.getItem(getSyncBaseKey()) || 'null'); } catch(e) { return null; }
+    }
+    function writeSyncBase(value) {
+      try { localStorage.setItem(getSyncBaseKey(), JSON.stringify(value || null)); } catch(e) { console.warn('Sync baseline could not be saved',e); }
+    }
+    function markSyncPending(flag) {
+      try { if(flag) localStorage.setItem(getSyncPendingKey(),'1'); else localStorage.removeItem(getSyncPendingKey()); } catch(e) {}
+    }
+    function hasPendingLocalSync() {
+      try { return localStorage.getItem(getSyncPendingKey()) === '1' || syncInFlight; } catch(e) { return syncInFlight; }
+    }
+    function addSyncConflict(conflict) {
       try {
-        if (firebase.apps.length === 0) {
-          firebase.initializeApp({ databaseURL: url });
+        const key=getSyncConflictKey();
+        const rows=JSON.parse(localStorage.getItem(key)||'[]');
+        rows.push({...conflict, detectedAt:new Date().toISOString(), deviceId:getSyncDeviceId()});
+        localStorage.setItem(key,JSON.stringify(rows.slice(-300)));
+      } catch(e) { console.warn('Conflict log unavailable',e); }
+    }
+    function stableJson(value) {
+      try { return JSON.stringify(value, Object.keys(value||{}).sort()); } catch(e) { return JSON.stringify(value); }
+    }
+    function syncClone(value) { return value == null ? value : JSON.parse(JSON.stringify(value)); }
+    function syncRecordEqual(a,b) { return JSON.stringify(a ?? null) === JSON.stringify(b ?? null); }
+    function mergeLedgerById(remoteLedger, localLedger) {
+      const out=Array.isArray(remoteLedger)?remoteLedger.map(syncClone):[];
+      const seen=new Set(out.map(x=>String(x?.id||'')));
+      (Array.isArray(localLedger)?localLedger:[]).forEach(x=>{
+        const id=String(x?.id||'');
+        if(id && !seen.has(id)){out.push(syncClone(x));seen.add(id);}
+      });
+      return out;
+    }
+    function mergeRecordArray(key, baseArr, localArr, remoteArr, conflicts) {
+      const base=Array.isArray(baseArr)?baseArr:[];
+      const local=Array.isArray(localArr)?localArr:[];
+      const remote=Array.isArray(remoteArr)?remoteArr:[];
+      const out=remote.map(syncClone);
+      const index=new Map(out.map((r,i)=>[String(r?.id||''),i]));
+      const baseMap=new Map(base.filter(r=>r?.id!=null).map(r=>[String(r.id),r]));
+      const localMap=new Map(local.filter(r=>r?.id!=null).map(r=>[String(r.id),r]));
+      const appendOnly = ['bills','purchases','companyLedger','production','chat','companyChat'];
+      for (const [id,lrec] of localMap) {
+        const brec=baseMap.get(id);
+        const ri=index.get(id);
+        if (!brec) {
+          if (ri===undefined) { index.set(id,out.length); out.push(syncClone(lrec)); }
+          else if (!syncRecordEqual(out[ri],lrec)) conflicts.push({type:'duplicate-id',collection:key,recordId:id,local:lrec,remote:out[ri]});
+          continue;
         }
-        firebaseDb = firebase.database();
-        
-        updateSyncStatusUI(true);
-
-        // Public App Directory Registration
-        if (state.user?.mobile) {
-          const safeMobile = sanitizeKey(state.user.mobile);
-          firebaseDb.ref(`app_directory/${safeMobile}`).set({
-            name: state.user.name,
-            mobile: state.user.mobile,
-            companyName: state.user.companyName,
-            role: state.user.role,
-            lastSeen: Date.now()
-          });
+        if (syncRecordEqual(brec,lrec)) continue;
+        if (ri===undefined) {
+          // Never propagate a deletion over a record still present in cloud.
+          conflicts.push({type:'remote-delete-local-edit',collection:key,recordId:id,local:lrec});
+          continue;
         }
-
-        // Live Sync Listener on Private Company Path
-        const companyRef = firebaseDb.ref(`companies/${safeCompanyId}/businessData`);
-        companyRef.on('value', (snapshot) => {
-          const remoteData = snapshot.val();
-          if (!remoteData) {
-            // Anti-Overwrite Guard: If remote is empty and local has state, push local
-            if (state.customers.length > 0 || state.bills.length > 0) {
-              companyRef.set(state);
-            }
-          } else if (!hasPendingLocalSync() && remoteData.updatedAt && remoteData.updatedAt > state.updatedAt) {
-            state = { ...state, ...remoteData };
-            localStorage.setItem(getStorageKey(), JSON.stringify(state));
-            renderAllViews();
-            showToast("क्लाउड से डेटा सिंक हुआ", "fa-cloud-arrow-down");
+        const rrec=out[ri];
+        const merged={...rrec};
+        const fields=new Set([...Object.keys(brec||{}),...Object.keys(lrec||{})]);
+        for (const field of fields) {
+          if (['id','ledger'].includes(field)) continue;
+          const b=brec?.[field], l=lrec?.[field], r=rrec?.[field];
+          if (syncRecordEqual(b,l)) continue;
+          if (syncRecordEqual(b,r) || syncRecordEqual(l,r)) { merged[field]=syncClone(l); continue; }
+          // Concurrent sales/payments are additive for balances and stock; RTDB transaction
+          // serializes this delta against the latest committed remote value.
+          if (['dues','stock','hangerCurrent','totalBought'].includes(field) &&
+              Number.isFinite(Number(b)) && Number.isFinite(Number(l)) && Number.isFinite(Number(r))) {
+            merged[field]=Number(r||0)+(Number(l||0)-Number(b||0));
+          } else {
+            conflicts.push({type:'field-conflict',collection:key,recordId:id,field,base:b,local:l,remote:r});
           }
-        });
+        }
+        if (Array.isArray(lrec.ledger)) merged.ledger=mergeLedgerById(rrec.ledger,lrec.ledger);
+        out[ri]=merged;
+      }
+      // Keep all remote rows. Local hard deletes are intentionally not propagated.
+      return out;
+    }
+    function mergeBusinessState(base, local, remote) {
+      const conflicts=[];
+      const b=base||{}, l=local||{}, r=remote||{};
+      const merged={...r};
+      const arrayKeys=new Set([...Object.keys(b),...Object.keys(l),...Object.keys(r)].filter(k=>Array.isArray(l[k])||Array.isArray(r[k])||Array.isArray(b[k])));
+      for (const key of arrayKeys) merged[key]=mergeRecordArray(key,b[key],l[key],r[key],conflicts);
+      // Merge non-array top-level values conservatively. Never overwrite concurrent settings/user edits silently.
+      const skip=new Set([...arrayKeys,'updatedAt','syncMeta','user']);
+      for (const key of new Set([...Object.keys(b),...Object.keys(l)])) {
+        if(skip.has(key) || syncRecordEqual(b[key],l[key])) continue;
+        if(syncRecordEqual(b[key],r[key]) || syncRecordEqual(l[key],r[key])) merged[key]=syncClone(l[key]);
+        else if (key === 'settings' && b[key] && l[key] && r[key]) {
+          merged.settings={...r[key]};
+          for(const f of new Set([...Object.keys(b[key]),...Object.keys(l[key])])) {
+            if(syncRecordEqual(b[key][f],l[key][f])) continue;
+            if(syncRecordEqual(b[key][f],r[key][f]) || syncRecordEqual(l[key][f],r[key][f])) merged.settings[f]=syncClone(l[key][f]);
+            else conflicts.push({type:'settings-conflict',field:f,local:l[key][f],remote:r[key][f]});
+          }
+        } else conflicts.push({type:'top-level-conflict',field:key,local:l[key],remote:r[key]});
+      }
+      // Keep current signed-in identity local to this device; do not copy another device's session.
+      merged.user=syncClone(l.user || r.user || {});
+      merged.updatedAt=Date.now();
+      merged.syncMeta={...(r.syncMeta||{}),lastWriterDeviceId:getSyncDeviceId(),lastWriterAt:Date.now()};
+      return {data:merged,conflicts};
+    }
+    function setSyncStatus(label, live) {
+      const btn=document.getElementById('sync-status-btn'), txt=document.getElementById('sync-status-text');
+      if(!btn||!txt) return;
+      btn.className = live
+        ? "px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition border bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+        : "px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition border bg-amber-500/10 text-amber-300 border-amber-500/30";
+      txt.textContent=label;
+    }
+    function initFirebaseConnection() {
+      const url=state.settings.firebaseUrl||DEFAULT_FIREBASE_URL;
+      const safeCompanyId=sanitizeKey(state.user?.companyId||DEFAULT_COMPANY_ID);
+      try {
+        if(firebase.apps.length===0) firebase.initializeApp({databaseURL:url});
+        firebaseDb=firebase.database();
+        syncDeviceId=getSyncDeviceId();
+        const companyRef=firebaseDb.ref(`companies/${safeCompanyId}/businessData`);
+        setSyncStatus('सिंक कनेक्ट हो रहा है…',false);
 
-        // Listen to Private Company Group Chat
-        firebaseDb.ref(`companies/${safeCompanyId}/chat`).on('value', (snapshot) => {
-          const chatVal = snapshot.val();
-          state.companyChat = chatVal ? Object.values(chatVal) : [];
-          renderCompanyChatMessages();
-        });
+        // Presence is diagnostic only. It is not GPS tracking and must not be treated as authentication.
+        if(state.user?.mobile) {
+          const safeMobile=sanitizeKey(state.user.mobile);
+          firebaseDb.ref(`app_directory/${safeMobile}`).update({
+            name:state.user.name||'',mobile:state.user.mobile,companyName:state.user.companyName||'UJJWALJI',
+            role:state.user.role||'Salesman',deviceId:syncDeviceId,lastSeen:Date.now()
+          }).catch(err=>console.warn('Directory presence update failed',err));
+        }
 
-        // Listen to Voice Call Signaling
-        if (state.user?.mobile) {
-          const safeMobile = sanitizeKey(state.user.mobile);
-          firebaseDb.ref(`calls/${safeMobile}`).on('value', (snapshot) => {
-            const callData = snapshot.val();
-            if (callData && callData.status === 'incoming') {
-              showIncomingCallOverlay(callData);
+        if(!syncListenerAttached) {
+          syncListenerAttached=true;
+          companyRef.on('value', snapshot=>{
+            const remote=snapshot.val();
+            if(!remote) {
+              if(!hasPendingLocalSync()) queueSafeFirebaseSync();
+              return;
             }
+            const fingerprint=JSON.stringify(remote);
+            if(fingerprint===lastRemoteFingerprint) return;
+            lastRemoteFingerprint=fingerprint;
+            if(!hasPendingLocalSync()) {
+              const localHasRecords = ['customers','suppliers','products','bills','purchases'].some(k=>Array.isArray(state[k])&&state[k].length>0);
+              const baseline = readSyncBase();
+              if(!baseline && localHasRecords) {
+                // Preserve both sides. A first-time migration must be reviewed explicitly.
+                try { localStorage.setItem(getStorageKey()+'_pre_migration_recovery',JSON.stringify(state)); } catch(e) {}
+                setSyncStatus('पहला डेटा मिलान आवश्यक',false);
+                showToast('इस मोबाइल का लोकल डेटा सुरक्षित रखा है। पहले क्लाउड/लोकल डेटा मिलान करें।','fa-triangle-exclamation');
+                return;
+              }
+              const localUser=syncClone(state.user);
+              state={...state,...remote,user:localUser};
+              writeSyncBase(remote);
+              try{localStorage.setItem(getStorageKey(),JSON.stringify(state));}catch(e){}
+              renderAllViews();
+              setSyncStatus('Cloud Live',true);
+            }
+          }, err=>{
+            console.error('Firebase listener error',err);
+            setSyncStatus('सिंक त्रुटि',false);
           });
         }
 
-      } catch (err) {
-        console.error("Firebase init failed:", err);
-        updateSyncStatusUI(false);
+        firebaseDb.ref(`companies/${safeCompanyId}/chat`).on('value',snapshot=>{
+          const chatVal=snapshot.val(); state.companyChat=chatVal?Object.values(chatVal):[];
+          if(typeof renderCompanyChatMessages==='function') renderCompanyChatMessages();
+        });
+        if(state.user?.mobile) {
+          const safeMobile=sanitizeKey(state.user.mobile);
+          firebaseDb.ref(`calls/${safeMobile}`).on('value',snapshot=>{
+            const callData=snapshot.val();
+            if(callData&&callData.status==='incoming'&&typeof showIncomingCallOverlay==='function') showIncomingCallOverlay(callData);
+          });
+        }
+        // Restore queued offline edits when connection returns.
+        window.addEventListener('online',()=>queueSafeFirebaseSync());
+        if(localStorage.getItem(getSyncPendingKey())==='1') queueSafeFirebaseSync();
+      } catch(err) {
+        console.error('Firebase init failed:',err);
+        firebaseDb=null; setSyncStatus('Local Only',false);
       }
     }
-
+    function queueSafeFirebaseSync() {
+      if(!firebaseDb || !state.user?.companyId) { markSyncPending(true); setSyncStatus('Offline · लोकल सेव',false); return; }
+      if(syncInFlight) { syncRequestedAgain=true; return; }
+      syncInFlight=true;
+      markSyncPending(true);
+      const safeCompanyId=sanitizeKey(state.user.companyId);
+      const ref=firebaseDb.ref(`companies/${safeCompanyId}/businessData`);
+      const localSnapshot=syncClone(state);
+      const baseSnapshot=readSyncBase();
+      let transactionConflicts=[];
+      ref.transaction(current=>{
+        if(current==null) return {...localSnapshot,updatedAt:Date.now(),syncMeta:{lastWriterDeviceId:getSyncDeviceId(),lastWriterAt:Date.now()}};
+        if(!baseSnapshot) {
+          // Existing cloud dataset with no known common ancestor: do not overwrite it.
+          return;
+        }
+        const result=mergeBusinessState(baseSnapshot,localSnapshot,current);
+        transactionConflicts=result.conflicts||[];
+        return result.data;
+      },(error,committed,snapshot)=>{
+        syncInFlight=false;
+        if(error) {
+          console.error('Safe Firebase transaction failed',error);
+          markSyncPending(true); setSyncStatus('सिंक लंबित',false);
+        } else if(committed && snapshot?.val()) {
+          const remote=snapshot.val();
+          writeSyncBase(remote); markSyncPending(false);
+          transactionConflicts.forEach(addSyncConflict);
+          const localUser=syncClone(state.user);
+          state={...remote,user:localUser};
+          try{localStorage.setItem(getStorageKey(),JSON.stringify(state));}catch(e){}
+          if(transactionConflicts.length) {
+            setSyncStatus('सिंक हुआ · समीक्षा बाकी',false);
+            showToast(`${transactionConflicts.length} डेटा बदलावों में टकराव मिला; स्थानीय Conflict Log में सुरक्षित रखा है।`,'fa-triangle-exclamation');
+          } else setSyncStatus('Cloud Live',true);
+          renderAllViews();
+        } else {
+          markSyncPending(true);
+          setSyncStatus('क्लाउड डेटा जाँचें',false);
+          showToast('क्लाउड में पहले से डेटा है। सुरक्षित मर्ज के लिए Owner जाँच आवश्यक है।','fa-triangle-exclamation');
+        }
+        if(syncRequestedAgain) { syncRequestedAgain=false; queueSafeFirebaseSync(); }
+      },false);
+    }
     function saveAndSyncState() {
       saveToLocalStorage();
-      if (firebaseDb && state.user?.companyId) {
-        const safeCompanyId = sanitizeKey(state.user.companyId);
-        firebaseDb.ref(`companies/${safeCompanyId}/businessData`).set(state);
-      }
+      markSyncPending(true);
+      if(firebaseDb && navigator.onLine!==false) queueSafeFirebaseSync();
+      else setSyncStatus('Offline · लोकल सेव',false);
     }
 
-    function updateSyncStatusUI(isLive) {
-      const btn = document.getElementById('sync-status-btn');
-      const txt = document.getElementById('sync-status-text');
-      if (isLive) {
-        btn.className = "px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition border bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
-        txt.textContent = "Cloud Live";
-      } else {
-        btn.className = "px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition border bg-slate-800 text-slate-400 border-slate-700";
-        txt.textContent = "Local Only";
-      }
-    }
+    function updateSyncStatusUI(isLive) { setSyncStatus(isLive ? 'Cloud Live' : 'Local Only', !!isLive); }
 
     function manualPushCloud() {
-      if (!firebaseDb) {
-        showToast("Firebase कनेक्ट नहीं है!", "fa-triangle-exclamation");
-        return;
-      }
-      saveAndSyncState();
-      showToast("डेटा सफलतापूर्वक क्लाउड पर भेजा गया!", "fa-cloud-arrow-up");
+      if (!firebaseDb) { showToast('Firebase कनेक्ट नहीं है; डेटा लोकल में सुरक्षित है।','fa-triangle-exclamation'); return; }
+      markSyncPending(true);
+      queueSafeFirebaseSync();
+      showToast('सुरक्षित सिंक अनुरोध भेज दिया गया है। स्थिति पूरी होने तक देखें।','fa-cloud-arrow-up');
     }
-
     function manualPullCloud() {
-      if (!firebaseDb) return;
-      const safeCompanyId = sanitizeKey(state.user.companyId);
-      firebaseDb.ref(`companies/${safeCompanyId}/businessData`).once('value', (snap) => {
-        const data = snap.val();
-        if (data) {
-          state = { ...state, ...data };
-          saveToLocalStorage();
-          renderAllViews();
-          showToast("क्लाउड से डेटा लोड किया गया!");
-        } else {
-          showToast("क्लाउड पर कोई डेटा नहीं मिला");
-        }
-      });
+      if (!firebaseDb) return showToast('Firebase कनेक्ट नहीं है','fa-triangle-exclamation');
+      const safeCompanyId=sanitizeKey(state.user.companyId);
+      firebaseDb.ref(`companies/${safeCompanyId}/businessData`).once('value').then(snap=>{
+        const remote=snap.val();
+        if(!remote) return showToast('क्लाउड पर डेटा नहीं मिला');
+        if(hasPendingLocalSync()) return showToast('पहले लोकल बदलावों का सुरक्षित सिंक पूरा करें।','fa-triangle-exclamation');
+        const localUser=syncClone(state.user);
+        state={...state,...remote,user:localUser};
+        writeSyncBase(remote);
+        localStorage.setItem(getStorageKey(),JSON.stringify(state));
+        renderAllViews(); setSyncStatus('Cloud Live',true);
+        showToast('क्लाउड डेटा लोड हो गया');
+      }).catch(err=>{console.error(err);showToast('क्लाउड से डेटा नहीं पढ़ा जा सका','fa-triangle-exclamation');});
     }
 
     function connectFirebaseCloud() {
@@ -1910,6 +2121,7 @@
       if (tabId === 'dashboard') renderDashboardWidgets();
       if (tabId === 'new-bill') populateBillingDropdowns();
       if (tabId === 'customers') renderCustomersList();
+      if (tabId === 'area-intel') renderAreaIntelligence();
       if (tabId === 'products') renderProductsList();
       if (tabId === 'purchases') renderPurchasesView();
       if (tabId === 'production') renderProductionView();
@@ -1944,6 +2156,7 @@
       renderUserBadge();
       renderDashboardWidgets();
       renderCustomersList();
+      renderAreaIntelligence();
       renderProductsList();
       renderWorkersList();
       renderPurchasesView();
@@ -2131,9 +2344,11 @@
     function escapeHTML(value) { return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
     let billCustomerMatches = [], billProductMatches = [], billCustomerFocusIndex = -1, billProductFocusIndex = -1;
     function populateBillingDropdowns() {
-      const autoNum = 1001 + state.bills.length;
       const autoEl = document.getElementById('bill-auto-id');
-      if (autoEl) autoEl.textContent = `BILL-${autoNum}`;
+      if (autoEl && !autoEl.dataset.billId) {
+        autoEl.dataset.billId = 'BILL-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,8).toUpperCase();
+      }
+      if (autoEl) autoEl.textContent = autoEl.dataset.billId;
     }
     function onBillingCustomerSearch() {
       const input = document.getElementById('bill-customer-select');
@@ -2281,8 +2496,12 @@
       document.getElementById('bill-calc-remaining').textContent = `₹${remainingDues}`;
     }
 
+    let billSaveInProgress = false;
     function saveAndGenerateInvoice() {
+      if (billSaveInProgress) return;
+      billSaveInProgress = true;
       if (cartItems.length === 0) {
+        billSaveInProgress = false;
         showToast("कृपया बिल में सामान जोड़ें!", "fa-triangle-exclamation");
         return;
       }
@@ -2296,6 +2515,7 @@
 
       if (activeCustomerMode === 'saved') {
         if (!selectedCustomerId) {
+          billSaveInProgress = false;
           showToast("कृपया लिस्ट से ग्राहक चुनें!", "fa-triangle-exclamation");
           return;
         }
@@ -2329,7 +2549,8 @@
         }
       }
 
-      const autoId = document.getElementById('bill-auto-id').textContent;
+      const billIdEl = document.getElementById('bill-auto-id');
+      const autoId = billIdEl?.dataset.billId || ('BILL-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,8).toUpperCase());
       const subtotal = cartItems.reduce((acc, item) => acc + item.total, 0);
       const discType = document.getElementById('bill-discount-type').value;
       const discVal = parseFloat(document.getElementById('bill-discount-val').value) || 0;
@@ -2373,13 +2594,15 @@
         if (!Array.isArray(targetCust.ledger)) { targetCust.openingDues = Number(targetCust.dues || 0); targetCust.ledger = []; }
         targetCust.dues = (targetCust.dues || 0) + remainingDues;
         targetCust.hangerCurrent = (targetCust.hangerCurrent || 0) + cartItems.reduce((acc, i) => acc + i.qty, 0);
-        targetCust.ledger.push({id:`txn-${Date.now()}`, type:'bill', date:new Date().toISOString(), ref:newBill.id, debit:netTotal, credit:paidAmount, mode:payMode, note:`बिल ${newBill.id}`});
+        targetCust.ledger.push({id:`bill-ledger-${newBill.id}`, type:'bill', date:new Date().toISOString(), ref:newBill.id, debit:netTotal, credit:paidAmount, mode:payMode, note:`बिल ${newBill.id}`});
         newBill.closingDues = targetCust.dues;
       }
 
       if (newBill.closingDues === undefined) newBill.closingDues = remainingDues;
       state.bills.push(newBill);
       saveAndSyncState();
+      billSaveInProgress = false;
+      if (billIdEl) delete billIdEl.dataset.billId;
 
       // View Printable Invoice
       renderPrintableInvoice(newBill);
@@ -2609,6 +2832,95 @@
       }).join('');
     }
 
+
+    function renderAreaIntelligence() {
+      const customers = Array.isArray(state.customers) ? state.customers : [];
+      const searchEl = document.getElementById('area-intel-search');
+      const areaEl = document.getElementById('area-intel-area');
+      const statusEl = document.getElementById('area-intel-status');
+      const results = document.getElementById('area-intel-results');
+      if (!results) return;
+
+      const oldArea = areaEl ? areaEl.value : '';
+      const areas = [...new Set(customers.map(c => String(c.areaName || c.city || c.district || '').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+      if (areaEl) {
+        areaEl.innerHTML = '<option value="">सभी क्षेत्र</option>' + areas.map(a => `<option value="${escapeHTML(a)}">${escapeHTML(a)}</option>`).join('');
+        areaEl.value = areas.includes(oldArea) ? oldArea : '';
+      }
+
+      const totalDues = customers.reduce((sum,c)=>sum + Math.max(0, Number(c.dues || 0)), 0);
+      const clearCount = customers.filter(c => Number(c.dues || 0) <= 0).length;
+      const setText = (id, value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
+      setText('area-kpi-total', customers.length.toLocaleString('en-IN'));
+      setText('area-kpi-dues', '₹' + totalDues.toLocaleString('en-IN'));
+      setText('area-kpi-clear', clearCount.toLocaleString('en-IN'));
+      setText('area-kpi-areas', areas.length.toLocaleString('en-IN'));
+
+      const q = (searchEl?.value || '').trim().toLocaleLowerCase();
+      const selectedArea = areaEl?.value || '';
+      const status = statusEl?.value || 'all';
+      const filtered = customers.filter(c => {
+        const fields = [c.name,c.shopName,c.mobile,c.code,c.areaName,c.areaCode,c.address,c.city,c.district,c.state,c.pincode]
+          .map(v=>String(v||'').toLocaleLowerCase());
+        const matchesSearch = !q || fields.some(v=>v.includes(q));
+        const areaName = String(c.areaName || c.city || c.district || '').trim();
+        const matchesArea = !selectedArea || areaName === selectedArea;
+        const due = Number(c.dues || 0);
+        const matchesStatus = status === 'all' || (status === 'due' ? due > 0 : due <= 0);
+        return matchesSearch && matchesArea && matchesStatus;
+      }).sort((a,b)=>Number(b.dues||0)-Number(a.dues||0));
+
+      if (!filtered.length) {
+        results.innerHTML = '<div class="col-span-full rounded-xl border border-slate-700 bg-slate-800 p-8 text-center text-sm text-slate-400">इस खोज या क्षेत्र में कोई ग्राहक रिकॉर्ड नहीं मिला।</div>';
+        return;
+      }
+      results.innerHTML = filtered.map(c => {
+        const due = Number(c.dues || 0);
+        const isDue = due > 0;
+        const locationText = [c.areaName,c.city,c.district,c.pincode].filter(Boolean).join(' · ');
+        const address = [c.address,c.city,c.district,c.state,c.pincode].filter(Boolean).join(', ');
+        const mapHref = c.gps ? String(c.gps) : (address ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address) : '');
+        const created = c.createdAt || c.createdDate || c.addedOn || '';
+        const isNew = !!created && (Date.now() - new Date(created).getTime() < 30*24*60*60*1000);
+        const statusLabel = isDue ? 'बकाया' : 'क्लियर';
+        const statusClass = isDue ? 'text-rose-300 bg-rose-500/10 border-rose-500/30' : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30';
+        const cid = JSON.stringify(String(c.id || '')).replace(/</g,'\\u003c');
+        return `<article class="rounded-xl border ${isDue?'border-rose-500/30':'border-slate-700'} bg-slate-800/80 p-3 space-y-3">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0"><h3 class="font-bold text-sm text-white truncate">${escapeHTML(c.shopName || c.name || 'दुकान')}</h3>
+              <p class="text-xs text-slate-400 truncate">${escapeHTML(c.name || '')}${c.code ? ' · '+escapeHTML(c.code) : ''}</p></div>
+            <span class="shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 rounded-lg bg-slate-900/70 p-2">
+            <div><small class="text-slate-500">बकाया राशि</small><b class="block ${isDue?'text-rose-300':'text-emerald-300'}">₹${due.toLocaleString('en-IN')}</b></div>
+            <div><small class="text-slate-500">क्षेत्र / पिनकोड</small><b class="block text-xs text-slate-200">${escapeHTML(locationText || 'दर्ज नहीं')}</b></div>
+          </div>
+          ${c.mobile ? `<p class="text-xs text-slate-400"><i class="fa-solid fa-phone mr-1"></i>${escapeHTML(c.mobile)}</p>` : ''}
+          ${isNew ? '<span class="inline-block text-[10px] rounded bg-blue-500/10 text-blue-300 px-2 py-1">नया ग्राहक</span>' : ''}
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="openCustomerLedger(${cid})" class="rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 py-2 text-xs font-bold"><i class="fa-solid fa-book-open"></i> पूरा खाता</button>
+            <button onclick="openCustomerModal(${cid})" class="rounded-lg bg-slate-900 border border-slate-700 text-slate-200 py-2 text-xs font-bold"><i class="fa-solid fa-user-pen"></i> प्रोफाइल</button>
+            <button onclick="areaIntelCreateBill(${cid})" class="rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-200 py-2 text-xs font-bold"><i class="fa-solid fa-file-invoice"></i> नया बिल</button>
+            ${c.mobile ? `<a href="https://wa.me/91${encodeURIComponent(String(c.mobile).replace(/\D/g,''))}" target="_blank" rel="noopener" class="rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 py-2 text-center text-xs font-bold"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>` : `<span class="rounded-lg bg-slate-900 border border-slate-700 text-slate-500 py-2 text-center text-xs">मोबाइल नहीं</span>`}
+          </div>
+          ${mapHref ? `<a href="${escapeHTML(mapHref)}" target="_blank" rel="noopener" class="block rounded-lg border border-slate-700 bg-slate-900 py-2 text-center text-xs text-sky-300"><i class="fa-solid fa-map-location-dot"></i> मैप / दिशा देखें</a>` : '<p class="text-[10px] text-slate-500">मैप के लिए ग्राहक का पता या GPS रिकॉर्ड उपलब्ध नहीं है।</p>'}
+        </article>`;
+      }).join('');
+    }
+
+    function areaIntelCreateBill(customerId) {
+      const customer = (state.customers || []).find(c => String(c.id) === String(customerId));
+      if (!customer) { showToast('ग्राहक रिकॉर्ड नहीं मिला', 'fa-triangle-exclamation'); return; }
+      switchTab('new-bill');
+      const input = document.getElementById('bill-customer-select');
+      if (input) {
+        input.value = customer.shopName || customer.name || '';
+        onBillingCustomerSearch();
+        const match = (typeof billCustomerMatches !== 'undefined' ? billCustomerMatches : []).find(c => String(c.id) === String(customerId));
+        if (match) chooseBillCustomer(match.id);
+      }
+    }
+
     document.addEventListener('input', (e)=>{ if(e.target && e.target.id==='cust-mobile') e.target.value=e.target.value.replace(/\D/g,'').slice(0,10); });
 
     function openCustomerModal(editId = null) {
@@ -2764,15 +3076,25 @@
       document.getElementById('modal-customer-ledger').classList.remove('hidden');
     }
     function saveCustomerPayment(e) {
-      e.preventDefault(); const id=document.getElementById('cl-customer-id').value; const c=state.customers.find(x=>x.id===id); if(!c) return;
-      const amount=Number(document.getElementById('cl-payment-amount').value);
-      if(!(amount>0)) return showToast('जमा रकम सही दर्ज करें','fa-triangle-exclamation');
-      if(!Array.isArray(c.ledger)) { c.openingDues=Number(c.dues||0); c.ledger=[]; }
-      if(amount>Number(c.dues||0) && !confirm('जमा रकम वर्तमान बकाया से अधिक है। क्या अतिरिक्त रकम एडवांस के रूप में दर्ज करें?')) return;
-      c.ledger.push({id:`txn-${Date.now()}`,type:'payment',date:new Date().toISOString(),ref:`REC-${Date.now().toString().slice(-6)}`,debit:0,credit:amount,mode:document.getElementById('cl-payment-mode').value,note:document.getElementById('cl-payment-note').value.trim()});
-      c.dues=Math.max(0,Number(c.dues||0)-amount);
-      saveAndSyncState(); renderCustomersList(); openCustomerLedger(id);
-      showToast('ग्राहक का भुगतान खाते में दर्ज हो गया');
+      e.preventDefault();
+      const submitNow=Date.now();
+      if(customerPaymentSaving || submitNow-lastCustomerPaymentSubmitAt<1200) return;
+      customerPaymentSaving=true;
+      lastCustomerPaymentSubmitAt=submitNow;
+      try {
+        const id=document.getElementById('cl-customer-id').value;
+        const c=state.customers.find(x=>x.id===id);
+        if(!c) { customerPaymentSaving=false; return; }
+        const amount=Number(document.getElementById('cl-payment-amount').value);
+        if(!(amount>0)) { customerPaymentSaving=false; return showToast('जमा रकम सही दर्ज करें','fa-triangle-exclamation'); }
+        if(!Array.isArray(c.ledger)) { c.openingDues=Number(c.dues||0); c.ledger=[]; }
+        if(amount>Number(c.dues||0) && !confirm('जमा रकम वर्तमान बकाया से अधिक है। क्या अतिरिक्त रकम एडवांस के रूप में दर्ज करें?')) { customerPaymentSaving=false; return; }
+        const paymentId='PAY-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,9).toUpperCase();
+        c.ledger.push({id:paymentId,type:'payment',date:new Date().toISOString(),ref:paymentId,debit:0,credit:amount,mode:document.getElementById('cl-payment-mode').value,note:document.getElementById('cl-payment-note').value.trim(),deviceId:getSyncDeviceId()});
+        c.dues=Math.max(0,Number(c.dues||0)-amount);
+        saveAndSyncState(); renderCustomersList(); openCustomerLedger(id);
+        showToast('भुगतान लोकल में सेव हुआ; क्लाउड सिंक स्थिति ऊपर देखें');
+      } finally { customerPaymentSaving=false; }
     }
 
     function shareCustomerLedgerWhatsApp() {
@@ -2786,7 +3108,7 @@
       const raw=prompt(`${s.name} को कितना भुगतान किया? वर्तमान बकाया ₹${s.dues||0}`); if(raw===null) return;
       const amount=Number(raw); if(!(amount>0)) return showToast('सही रकम दर्ज करें');
       if(amount>Number(s.dues||0) && !confirm('भुगतान सप्लायर के बकाया से अधिक है। क्या एडवांस दर्ज करें?')) return;
-      s.ledger=Array.isArray(s.ledger)?s.ledger:[]; s.ledger.push({id:`sup-pay-${Date.now()}`,type:'payment',date:new Date().toISOString(),debit:0,credit:amount,note:'सप्लायर भुगतान'}); s.dues=Math.max(0,Number(s.dues||0)-amount);
+      s.ledger=Array.isArray(s.ledger)?s.ledger:[]; s.ledger.push({id:`SUP-PAY-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`,type:'payment',date:new Date().toISOString(),debit:0,credit:amount,note:'सप्लायर भुगतान'}); s.dues=Math.max(0,Number(s.dues||0)-amount);
       saveAndSyncState(); renderPurchasesView(); showToast('सप्लायर भुगतान खाते में दर्ज हुआ');
     }
     function shareSupplierLedgerWhatsApp(id) {
