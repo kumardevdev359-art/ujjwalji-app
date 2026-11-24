@@ -68,6 +68,17 @@
       #printable-invoice { position: absolute; left: 0; top: 0; width: 100%; color: #000; background: #fff; }
       .no-print { display: none !important; }
     }
+    #printable-invoice { box-sizing:border-box; width:100%; min-width:0; overflow:hidden; }
+    #printable-invoice * { box-sizing:border-box; min-width:0; overflow-wrap:anywhere; }
+    @media (max-width: 640px) {
+      #printable-invoice { padding:12px !important; border-radius:0 !important; font-size:12px; }
+      #printable-invoice .inv-summary-grid { grid-template-columns:minmax(0,1fr) !important; gap:12px !important; }
+      #printable-invoice .inv-qr-panel { justify-content:flex-start; flex-wrap:wrap; }
+      #printable-invoice .inv-totals { width:100%; }
+      #printable-invoice .inv-header-brand h1 { font-size:20px !important; }
+      #printable-invoice table { table-layout:fixed; }
+      #printable-invoice th, #printable-invoice td { padding:6px 4px !important; }
+    }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-slate-900">
@@ -998,7 +1009,6 @@
             <div class="flex flex-wrap gap-2">
               <button type="button" onclick="document.getElementById('cust-photo-camera').click()" class="px-3 py-2 rounded-lg bg-blue-600/20 border border-blue-500/40 text-blue-300 text-xs font-bold"><i class="fa-solid fa-camera"></i> कैमरा</button>
               <button type="button" onclick="document.getElementById('cust-photo-gallery').click()" class="px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-slate-200 text-xs font-bold"><i class="fa-regular fa-images"></i> गैलरी</button>
-              <button type="button" onclick="pickCustomerFromPhone()" class="px-3 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold"><i class="fa-solid fa-address-book"></i> मोबाइल कॉन्टैक्ट</button>
             </div>
             <input type="file" id="cust-photo-camera" accept="image/*" capture="environment" onchange="handleCustPhotoUpload(event)" class="hidden">
             <input type="file" id="cust-photo-gallery" accept="image/*" onchange="handleCustPhotoUpload(event)" class="hidden">
@@ -1020,7 +1030,10 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">मोबाइल नंबर</label>
-            <input type="tel" id="cust-mobile" pattern="[0-9]{10}" maxlength="10" placeholder="10 अंक" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100">
+            <div class="flex gap-2">
+              <input type="tel" id="cust-mobile" inputmode="numeric" maxlength="10" placeholder="10 अंक" class="min-w-0 flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100">
+              <button type="button" onclick="pickCustomerFromPhone()" class="shrink-0 px-2 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold"><i class="fa-solid fa-address-book"></i> कॉन्टैक्ट</button>
+            </div>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">ग्राहक आईडी (Customer ID)</label>
@@ -1042,13 +1055,24 @@
           </div>
         </div>
 
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">पूरा पता (मैनुअल / लोकेशन से)</label>
+            <input type="text" id="cust-address" placeholder="मोहल्ला, सड़क, दुकान/मकान नंबर" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100">
+          </div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">शहर / कस्बा</label><input type="text" id="cust-city" placeholder="दिबियापुर" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">जिला</label><input type="text" id="cust-district" placeholder="औरैया" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">राज्य</label><input type="text" id="cust-state" placeholder="उत्तर प्रदेश" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">पिन कोड</label><input type="text" id="cust-pincode" inputmode="numeric" maxlength="6" placeholder="206244" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100"></div>
+        </div>
+
         <!-- GPS Geolocation Button -->
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">GPS लोकेशन्स</label>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">GPS लोकेशन (आपकी अनुमति से)</label>
           <div class="flex items-center gap-2">
-            <input type="text" id="cust-gps-coords" readonly placeholder="अभी लोकेशन नहीं ली गई" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300">
+            <input type="text" id="cust-gps-coords" placeholder="GPS लिंक / निर्देशांक" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300">
             <button type="button" onclick="getCurrentGPSLocation()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
-              <i class="fa-solid fa-location-crosshairs"></i> लोकेशन लें
+              <i class="fa-solid fa-location-crosshairs"></i> लोकेशन से एरिया भरें
             </button>
           </div>
         </div>
@@ -1108,6 +1132,29 @@
           <button type="submit" class="gold-gradient text-slate-950 font-bold px-5 py-2 rounded-xl text-xs hover:opacity-90">सेव करें</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- CUSTOMER KHATABOOK LEDGER -->
+  <div id="modal-customer-ledger" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-5 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <div><h3 id="customer-ledger-title" class="text-sm font-bold text-amber-400">ग्राहक खाता / Khatabook</h3><p id="customer-ledger-subtitle" class="text-xs text-slate-400"></p></div>
+        <button onclick="closeModal('modal-customer-ledger')" class="text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <div class="bg-slate-800 rounded-lg p-2"><p class="text-[10px] text-slate-400">कुल बिक्री</p><b id="cl-sales" class="text-sm">₹0</b></div>
+        <div class="bg-slate-800 rounded-lg p-2"><p class="text-[10px] text-slate-400">कुल जमा</p><b id="cl-paid" class="text-sm text-emerald-400">₹0</b></div>
+        <div class="bg-slate-800 rounded-lg p-2"><p class="text-[10px] text-slate-400">वर्तमान बकाया</p><b id="cl-due" class="text-sm text-rose-400">₹0</b></div>
+      </div>
+      <form onsubmit="saveCustomerPayment(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2 bg-slate-800/70 p-3 rounded-xl">
+        <input type="hidden" id="cl-customer-id">
+        <input type="number" id="cl-payment-amount" min="1" step="0.01" required placeholder="जमा रकम ₹" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs">
+        <select id="cl-payment-mode" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs"><option>Cash</option><option>UPI</option><option>Bank</option><option>Other</option></select>
+        <input type="text" id="cl-payment-note" placeholder="रसीद / नोट" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs">
+        <button class="bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-2 text-xs font-bold">जमा सेव करें</button>
+      </form>
+      <div id="customer-ledger-rows" class="space-y-2"></div>
     </div>
   </div>
 
@@ -1289,7 +1336,7 @@
       <div id="printable-invoice" class="bg-white text-slate-900 p-6 rounded-xl space-y-4 border border-slate-300">
         <!-- Top Branding & Udhyam Header -->
         <div class="flex justify-between items-start border-b-2 border-amber-500 pb-4">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 inv-header-brand">
             <div id="inv-logo-box" class="w-14 h-14 rounded-full bg-slate-900 text-amber-400 font-extrabold text-2xl flex items-center justify-center overflow-hidden border border-amber-500">
               <span id="inv-logo-text">U</span>
               <img id="inv-logo-img" class="w-full h-full object-cover hidden">
@@ -1340,8 +1387,8 @@
         </table>
 
         <!-- Summary & Dynamic UPI QR -->
-        <div class="grid grid-cols-2 gap-4 items-center pt-2 border-t border-slate-200">
-          <div class="flex items-center gap-3">
+        <div id="inv-summary-grid" class="grid grid-cols-2 gap-4 items-center pt-2 border-t border-slate-200 inv-summary-grid">
+          <div class="flex items-center gap-3 inv-qr-panel">
             <div id="inv-upi-qr-box" class="bg-white p-1.5 border border-slate-300 rounded-lg"></div>
             <div>
               <p class="text-[10px] font-bold text-slate-600 uppercase">स्कैन करें और तुरंत भुगतान करें</p>
@@ -1350,7 +1397,7 @@
             </div>
           </div>
 
-          <div class="space-y-1 text-right text-xs">
+          <div class="space-y-1 text-right text-xs inv-totals">
             <div class="flex justify-between">
               <span class="text-slate-600">उप-कुल (Subtotal):</span>
               <span id="inv-subtotal" class="font-semibold">₹0</span>
@@ -1368,7 +1415,7 @@
               <span id="inv-paid" class="font-semibold">₹0</span>
             </div>
             <div class="flex justify-between text-rose-600 font-bold border-t border-slate-200 pt-1">
-              <span>शेष कुल बकाया (Net Dues):</span>
+              <span>कुल बकाया (Total Outstanding):</span>
               <span id="inv-netdues">₹0</span>
             </div>
           </div>
@@ -1448,7 +1495,7 @@
         blockedMobiles: []
       },
       customers: [
-        { id: "cust-1", code: "UJW-101", shopName: "उज्जल ज्वैलर्स", name: "राम कुमार", mobile: "9876543210", areaName: "दिबियापुर रोड", areaCode: "AUR-01", dues: 12000, hangerTarget: 60, hangerCurrent: 24, photo: "", gps: "" }
+        { id: "cust-1", code: "UJW-101", shopName: "उज्जल ज्वैलर्स", name: "राम कुमार", mobile: "9876543210", areaName: "दिबियापुर रोड", areaCode: "AUR-01", dues: 12000, openingDues: 12000, ledger: [], hangerTarget: 60, hangerCurrent: 24, photo: "", gps: "" }
       ],
       products: [
         { id: "prod-1", name: "ब्रास हैंगर 500g", appRate: 120, waRate: 150, stock: 450, unit: "Pcs" },
@@ -2222,7 +2269,7 @@
         custName = targetCust.name;
         custPhone = targetCust.mobile;
         custShop = targetCust.shopName;
-        custArea = `${targetCust.areaName||''} (${targetCust.areaCode||''})`;
+        custArea = [targetCust.address, targetCust.areaName, targetCust.city, targetCust.district, targetCust.state, targetCust.pincode, targetCust.areaCode].filter(Boolean).join(', ');
         oldDues = targetCust.dues || 0;
       } else {
         custName = document.getElementById('bill-walkin-name').value.trim() || "Walk-in Customer";
@@ -2289,10 +2336,14 @@
 
       // Update Customer Dues & 60-Hanger Progress
       if (targetCust) {
+        if (!Array.isArray(targetCust.ledger)) { targetCust.openingDues = Number(targetCust.dues || 0); targetCust.ledger = []; }
         targetCust.dues = (targetCust.dues || 0) + remainingDues;
         targetCust.hangerCurrent = (targetCust.hangerCurrent || 0) + cartItems.reduce((acc, i) => acc + i.qty, 0);
+        targetCust.ledger.push({id:`txn-${Date.now()}`, type:'bill', date:new Date().toISOString(), ref:newBill.id, debit:netTotal, credit:paidAmount, mode:payMode, note:`बिल ${newBill.id}`});
+        newBill.closingDues = targetCust.dues;
       }
 
+      if (newBill.closingDues === undefined) newBill.closingDues = remainingDues;
       state.bills.push(newBill);
       saveAndSyncState();
 
@@ -2356,7 +2407,7 @@
       document.getElementById('inv-offer-tag').textContent = bill.offerTag || 'Discount';
       document.getElementById('inv-nettotal').textContent = `₹${bill.netTotal}`;
       document.getElementById('inv-paid').textContent = `₹${bill.paidAmount}`;
-      document.getElementById('inv-netdues').textContent = `₹${bill.remainingDues}`;
+      document.getElementById('inv-netdues').textContent = `₹${bill.closingDues ?? bill.remainingDues}`;
 
       // Dynamic NPCI UPI QR Code
       const upiId = state.settings.upiId || "9876543210@paytm";
@@ -2395,50 +2446,42 @@
       if (!blob) throw new Error('Receipt image could not be created');
       return new File([blob], `UJJWALJI_Receipt_${bill.id}.png`, {type:'image/png'});
     }
-    function invoiceShareText(bill) {
-      const lines = bill.items.map((it,i)=>`${i+1}. ${it.name} — ${it.qty} × ₹${it.rate} = ₹${it.total}`).join('\n');
-      return `*UJJWALJI — बिल रिसिप्ट*\nबिल: ${bill.id}\nतारीख: ${bill.date}\nग्राहक: ${bill.customerName}\n${lines}\nकुल: ₹${bill.netTotal}\nजमा: ₹${bill.paidAmount}\nबाकी: ₹${bill.remainingDues}\n\nधन्यवाद!`;
-    }
     async function shareCurrentInvoice() {
       const bill = state.bills.find(b => b.id === currentInvoiceId);
       if (!bill) return showToast('पहले बिल चुनें', 'fa-triangle-exclamation');
       try {
         const file = await createInvoiceReceiptFile(bill);
-        if (navigator.canShare && navigator.canShare({files:[file]}) && navigator.share) {
-          await navigator.share({title:`UJJWALJI बिल ${bill.id}`, text:invoiceShareText(bill), files:[file]});
-        } else if (navigator.share) {
-          await navigator.share({title:`UJJWALJI बिल ${bill.id}`, text:invoiceShareText(bill)});
-          showToast('शेयर मेन्यू खुला। पूरी रिसिप्ट PNG डाउनलोड से भी भेज सकते हैं।');
+        if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+          // केवल इमेज फाइल शेयर होगी; editable bill text साथ नहीं जाएगा।
+          await navigator.share({title:`UJJWALJI Receipt ${bill.id}`, files:[file]});
         } else {
-          const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click(); URL.revokeObjectURL(a.href);
-          showToast('रिसिप्ट PNG डाउनलोड हुई; अब WhatsApp में अटैच करें');
+          const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click();
+          setTimeout(()=>URL.revokeObjectURL(a.href),30000);
+          showToast('पूरी रिसिप्ट PNG डाउनलोड हुई। WhatsApp में इसे फोटो/डॉक्यूमेंट के रूप में अटैच करें।');
         }
-      } catch(err) { if (err.name !== 'AbortError') { console.error(err); showToast('रिसिप्ट शेयर नहीं हो सकी। PNG डाउनलोड करके WhatsApp में भेजें।','fa-triangle-exclamation'); } }
+      } catch(err) { if (err.name !== 'AbortError') { console.error(err); showToast('रिसिप्ट शेयर नहीं हो सकी। PNG डाउनलोड करके भेजें।','fa-triangle-exclamation'); } }
     }
     async function shareInvoiceReceiptWhatsApp() {
       const bill = state.bills.find(b => b.id === currentInvoiceId);
       if (!bill) return showToast('पहले बिल चुनें', 'fa-triangle-exclamation');
-      const text = invoiceShareText(bill);
       try {
         const file = await createInvoiceReceiptFile(bill);
-        if (navigator.canShare && navigator.canShare({files:[file]}) && navigator.share) {
-          await navigator.share({title:`WhatsApp पर UJJWALJI बिल ${bill.id}`, text, files:[file]});
+        if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+          await navigator.share({title:`UJJWALJI Receipt ${bill.id}`, files:[file]});
           return;
         }
         const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click();
         setTimeout(()=>URL.revokeObjectURL(a.href),30000);
-        const phone = String(bill.customerPhone || '').replace(/\D/g,'');
-        const waUrl = `https://wa.me/${phone ? (phone.length===10?'91'+phone:phone) : ''}?text=${encodeURIComponent(text+'\n\nपूरी बिल रिसिप्ट PNG फाइल डाउनलोड हुई है। कृपया इसे WhatsApp में अटैच करें।')}`;
-        window.open(waUrl, '_blank');
-        showToast('रिसिप्ट डाउनलोड हुई; WhatsApp में PNG अटैच करें');
+        const phone=String(bill.customerPhone||'').replace(/\D/g,'');
+        window.open(`https://wa.me/${phone ? (phone.length===10?'91'+phone:phone) : ''}`, '_blank');
+        showToast('रिसिप्ट PNG डाउनलोड हुई। WhatsApp में अटैचमेंट आइकन से यही PNG भेजें; कोई editable बिल टेक्स्ट नहीं भेजा गया।');
       } catch(err) { if (err.name !== 'AbortError') { console.error(err); showToast('WhatsApp शेयर उपलब्ध नहीं हुआ। PNG डाउनलोड करके भेजें।','fa-triangle-exclamation'); } }
     }
     function shareInvoiceWhatsApp(billId) {
       const bill = state.bills.find(b => b.id === billId);
       if (!bill) return;
-      const phone = String(bill.customerPhone || '').replace(/\D/g,'');
-      const url = `https://wa.me/${phone ? (phone.length===10?'91'+phone:phone) : ''}?text=${encodeURIComponent(invoiceShareText(bill))}`;
-      window.open(url, '_blank');
+      currentInvoiceId = bill.id;
+      shareInvoiceReceiptWhatsApp();
     }
 
     /* 4. CUSTOMERS MANAGEMENT (60-Hanger Scheme) */
@@ -2514,8 +2557,9 @@
               </div>
             </div>
 
-            <!-- Call & WhatsApp Actions -->
+            <!-- Call, WhatsApp & Khatabook -->
             <div class="flex items-center gap-2 pt-1">
+              <button onclick="openCustomerLedger('${c.id}')" class="flex-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 py-1.5 rounded-lg text-xs font-bold"><i class="fa-solid fa-book-open"></i> खाता / जमा</button>
               ${c.mobile ? `
                 <a href="tel:${c.mobile}" class="flex-1 bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 py-1.5 rounded-lg text-xs font-bold text-center">
                   <i class="fa-solid fa-phone text-emerald-400"></i> कॉल
@@ -2530,6 +2574,8 @@
         `;
       }).join('');
     }
+
+    document.addEventListener('input', (e)=>{ if(e.target && e.target.id==='cust-mobile') e.target.value=e.target.value.replace(/\D/g,'').slice(0,10); });
 
     function openCustomerModal(editId = null) {
       const photoPreviewReset = document.getElementById('cust-photo-preview');
@@ -2549,6 +2595,11 @@
           document.getElementById('cust-code').value = c.code || '';
           document.getElementById('cust-area-name').value = c.areaName || '';
           document.getElementById('cust-area-code').value = c.areaCode || '';
+          document.getElementById('cust-address').value = c.address || '';
+          document.getElementById('cust-city').value = c.city || '';
+          document.getElementById('cust-district').value = c.district || '';
+          document.getElementById('cust-state').value = c.state || '';
+          document.getElementById('cust-pincode').value = c.pincode || '';
           document.getElementById('cust-opening-dues').value = c.dues || 0;
           document.getElementById('cust-hanger-target').value = c.hangerTarget || 60;
           document.getElementById('cust-gps-coords').value = c.gps || '';
@@ -2566,6 +2617,7 @@
         document.getElementById('cust-code').value = `UJW-${100 + state.customers.length + 1}`;
         document.getElementById('cust-area-name').value = '';
         document.getElementById('cust-area-code').value = '';
+        ['cust-address','cust-city','cust-district','cust-state','cust-pincode'].forEach(id=>document.getElementById(id).value='');
         document.getElementById('cust-opening-dues').value = 0;
         document.getElementById('cust-hanger-target').value = 60;
         document.getElementById('cust-gps-coords').value = '';
@@ -2593,6 +2645,13 @@
         mobile: document.getElementById('cust-mobile').value.trim(),
         areaName: document.getElementById('cust-area-name').value.trim(),
         areaCode: document.getElementById('cust-area-code').value.trim(),
+        address: document.getElementById('cust-address').value.trim(),
+        city: document.getElementById('cust-city').value.trim(),
+        district: document.getElementById('cust-district').value.trim(),
+        state: document.getElementById('cust-state').value.trim(),
+        pincode: document.getElementById('cust-pincode').value.trim(),
+        ledger: editId ? (state.customers.find(c=>c.id===editId)?.ledger || []) : [],
+        openingDues: editId ? (state.customers.find(c=>c.id===editId)?.openingDues ?? state.customers.find(c=>c.id===editId)?.dues ?? 0) : (parseFloat(document.getElementById('cust-opening-dues').value)||0),
         dues: parseFloat(document.getElementById('cust-opening-dues').value) || 0,
         hangerTarget: parseInt(document.getElementById('cust-hanger-target').value) || 60,
         hangerCurrent: 0,
@@ -2604,6 +2663,8 @@
         const idx = state.customers.findIndex(c => c.id === editId);
         if (idx !== -1) {
           customerObj.hangerCurrent = state.customers[idx].hangerCurrent || 0;
+          customerObj.ledger = state.customers[idx].ledger || [];
+          customerObj.openingDues = state.customers[idx].openingDues ?? state.customers[idx].dues ?? 0;
           state.customers[idx] = customerObj;
         }
       } else {
@@ -2627,18 +2688,57 @@
       }
     }
 
-    function getCurrentGPSLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-          document.getElementById('cust-gps-coords').value = mapUrl;
-          showToast("लोकेशन प्राप्त हुई!");
-        }, () => {
-          showToast("GPS एक्सेस नहीं मिला", "fa-triangle-exclamation");
-        });
-      }
+    async function getCurrentGPSLocation() {
+      if (!navigator.geolocation) return showToast('इस डिवाइस/ब्राउज़र में GPS उपलब्ध नहीं है', 'fa-triangle-exclamation');
+      showToast('आपकी अनुमति से लोकेशन प्राप्त की जा रही है…');
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const lat=pos.coords.latitude, lng=pos.coords.longitude;
+        document.getElementById('cust-gps-coords').value=`https://www.google.com/maps?q=${lat},${lng}`;
+        try {
+          const res=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=hi`);
+          if (!res.ok) throw new Error('Reverse geocoding unavailable');
+          const data=await res.json(), a=data.address||{};
+          const setIfBlank=(id,val)=>{const el=document.getElementById(id); if(val && !el.value.trim()) el.value=val;};
+          setIfBlank('cust-address', data.display_name || '');
+          setIfBlank('cust-city', a.city || a.town || a.village || a.suburb || a.municipality || '');
+          setIfBlank('cust-district', a.state_district || a.district || a.county || '');
+          setIfBlank('cust-state', a.state || '');
+          setIfBlank('cust-pincode', a.postcode || '');
+          setIfBlank('cust-area-name', a.suburb || a.neighbourhood || a.road || a.village || a.town || '');
+          showToast('लोकेशन और उपलब्ध एरिया विवरण भर दिए। सभी फील्ड आप मैनुअल बदल सकते हैं।');
+        } catch(e) { showToast('GPS मिल गया; एरिया का पता ऑटो नहीं मिला। विवरण मैनुअल भर सकते हैं।', 'fa-circle-info'); }
+      }, err => { showToast(err.code===1?'लोकेशन अनुमति नहीं मिली':'GPS लोकेशन नहीं मिल सकी', 'fa-triangle-exclamation'); }, {enableHighAccuracy:true, timeout:15000, maximumAge:60000});
+    }
+
+    function openCustomerLedger(customerId) {
+      const c=state.customers.find(x=>x.id===customerId); if(!c) return;
+      if(!Array.isArray(c.ledger)) { c.openingDues=Number(c.dues||0); c.ledger=[]; }
+      document.getElementById('cl-customer-id').value=c.id;
+      document.getElementById('customer-ledger-title').textContent=`${c.shopName||c.name} — खाता`;
+      document.getElementById('customer-ledger-subtitle').textContent=`${c.name||''} | ${c.mobile||''} | ${c.code||''}`;
+      document.getElementById('cl-payment-amount').value=''; document.getElementById('cl-payment-note').value='';
+      const rows=document.getElementById('customer-ledger-rows');
+      const tx=[...c.ledger].sort((a,b)=>new Date(a.date)-new Date(b.date));
+      let balance=Number(c.openingDues||0), sales=0, paid=0;
+      let html=`<div class="flex justify-between text-xs bg-slate-800 p-2 rounded-lg"><b>प्रारंभिक बकाया</b><b>₹${balance.toLocaleString('en-IN')}</b></div>`;
+      tx.forEach(t=>{ const debit=Number(t.debit||0), credit=Number(t.credit||0); balance+=debit-credit; sales+=debit; paid+=credit; html+=`<div class="grid grid-cols-5 gap-1 text-[10px] sm:text-xs bg-slate-800/70 border border-slate-700 rounded-lg p-2"><span>${new Date(t.date).toLocaleDateString('en-IN')}</span><b class="col-span-2">${t.type==='bill'?'बिल':'जमा'}<small class="block text-slate-400 font-normal">${t.ref||t.note||''} ${t.mode||''}</small></b><span class="text-right text-rose-300">${debit?`₹${debit}`:'—'}</span><span class="text-right text-emerald-300">${credit?`₹${credit}`:'—'}</span><span class="col-span-5 text-right font-bold">शेष: ₹${balance.toLocaleString('en-IN')}</span></div>`; });
+      if(!tx.length) html+=`<p class="text-xs text-slate-500 text-center py-4">अभी कोई लेन-देन दर्ज नहीं है।</p>`;
+      rows.innerHTML=html;
+      document.getElementById('cl-sales').textContent=`₹${sales.toLocaleString('en-IN')}`;
+      document.getElementById('cl-paid').textContent=`₹${paid.toLocaleString('en-IN')}`;
+      document.getElementById('cl-due').textContent=`₹${Number(c.dues||0).toLocaleString('en-IN')}`;
+      document.getElementById('modal-customer-ledger').classList.remove('hidden');
+    }
+    function saveCustomerPayment(e) {
+      e.preventDefault(); const id=document.getElementById('cl-customer-id').value; const c=state.customers.find(x=>x.id===id); if(!c) return;
+      const amount=Number(document.getElementById('cl-payment-amount').value);
+      if(!(amount>0)) return showToast('जमा रकम सही दर्ज करें','fa-triangle-exclamation');
+      if(!Array.isArray(c.ledger)) { c.openingDues=Number(c.dues||0); c.ledger=[]; }
+      if(amount>Number(c.dues||0) && !confirm('जमा रकम वर्तमान बकाया से अधिक है। क्या अतिरिक्त रकम एडवांस के रूप में दर्ज करें?')) return;
+      c.ledger.push({id:`txn-${Date.now()}`,type:'payment',date:new Date().toISOString(),ref:`REC-${Date.now().toString().slice(-6)}`,debit:0,credit:amount,mode:document.getElementById('cl-payment-mode').value,note:document.getElementById('cl-payment-note').value.trim()});
+      c.dues=Math.max(0,Number(c.dues||0)-amount);
+      saveAndSyncState(); renderCustomersList(); openCustomerLedger(id);
+      showToast('ग्राहक का भुगतान खाते में दर्ज हो गया');
     }
 
     function setupDatalists() {
