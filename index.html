@@ -612,6 +612,18 @@
           </div>
         </div>
       </div>
+      <div class="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl space-y-3">
+        <div class="flex items-center justify-between gap-2"><h3 class="text-sm font-bold text-amber-400">कंपनी का अलग खाता (Company Cash / Bank Ledger)</h3><span class="text-[10px] text-slate-400">आय और खर्च</span></div>
+        <form onsubmit="addCompanyLedgerEntry(event)" class="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <select id="company-ledger-type" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs"><option value="income">जमा / आय</option><option value="expense">भुगतान / खर्च</option></select>
+          <input id="company-ledger-amount" type="number" min="0.01" step="0.01" required placeholder="रकम ₹" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs">
+          <input id="company-ledger-category" required placeholder="खाता / मद" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs">
+          <input id="company-ledger-note" placeholder="विवरण / रेफरेंस" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs">
+          <button class="bg-emerald-600 rounded-lg px-3 py-2 text-xs font-bold">एंट्री सेव करें</button>
+        </form>
+        <div class="grid grid-cols-3 gap-2 text-center"><div class="bg-slate-900 rounded-lg p-2"><small class="text-slate-400">कुल आय</small><b id="company-ledger-income" class="block text-emerald-400">₹0</b></div><div class="bg-slate-900 rounded-lg p-2"><small class="text-slate-400">कुल खर्च</small><b id="company-ledger-expense" class="block text-rose-400">₹0</b></div><div class="bg-slate-900 rounded-lg p-2"><small class="text-slate-400">नेट बैलेंस</small><b id="company-ledger-balance" class="block text-amber-400">₹0</b></div></div>
+        <div id="company-ledger-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
+      </div>
     </section>
 
     <!-- 6. DAILY PRODUCTION VIEW -->
@@ -628,9 +640,11 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">उत्पाद/आइटम चुनें</label>
-            <select id="prod-product-id" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100">
-              <option value="">-- उत्पाद चुनें --</option>
+            <input id="prod-product-search" type="search" autocomplete="off" oninput="filterProductionProducts(this.value)" placeholder="उत्पाद का नाम या कोड टाइप करें…" class="w-full mb-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100">
+            <select id="prod-product-id" required size="5" onchange="syncProductionProductSearch()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100">
+              <option value="">-- सूची से उत्पाद चुनें --</option>
             </select>
+            <p class="text-[10px] text-slate-400 mt-1">सूची हमेशा उपलब्ध है; ऊपर टाइप करते ही विकल्प फिल्टर होंगे।</p>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">उत्पादित मात्रा (Produced Quantity)</label>
@@ -874,6 +888,12 @@
           </h3>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-semibold text-slate-300 mb-1">कंपनी / ट्रेड नेम</label><input id="setting-company-name" placeholder="UJJWALJI" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100"></div>
+            <div><label class="block text-xs font-semibold text-slate-300 mb-1">प्रोपराइटर / संपर्क व्यक्ति</label><input id="setting-company-owner" placeholder="ASHISH KUMAR PORWAL" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100"></div>
+            <div><label class="block text-xs font-semibold text-slate-300 mb-1">कंपनी मोबाइल</label><input id="setting-company-mobile" inputmode="tel" placeholder="मोबाइल नंबर" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100"></div>
+            <div><label class="block text-xs font-semibold text-slate-300 mb-1">ई-मेल</label><input id="setting-company-email" type="email" placeholder="business@email.com" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100"></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">पूरा व्यावसायिक पता</label><textarea id="setting-company-address" rows="2" placeholder="पता, शहर, जिला, राज्य, पिन कोड" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100"></textarea></div>
+            <div class="sm:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">लाइसेंस / रजिस्ट्रेशन (जितने चाहें जोड़ें)</label><div id="company-licenses-list" class="space-y-2"></div><button type="button" onclick="addCompanyLicenseRow()" class="mt-2 text-xs text-amber-400 font-bold"><i class="fa-solid fa-plus"></i> लाइसेंस जोड़ें</button></div>
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">आपकी UPI ID (QR बिल पेमेंट के लिए)</label>
               <input type="text" id="setting-upi-id" placeholder="उदा. 9876543210@paytm" oninput="renderTestUPIQRCode()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100">
@@ -1140,7 +1160,7 @@
     <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-5 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-4">
       <div class="flex items-center justify-between border-b border-slate-700 pb-3">
         <div><h3 id="customer-ledger-title" class="text-sm font-bold text-amber-400">ग्राहक खाता / Khatabook</h3><p id="customer-ledger-subtitle" class="text-xs text-slate-400"></p></div>
-        <button onclick="closeModal('modal-customer-ledger')" class="text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+        <div class="flex items-center gap-3"><button type="button" onclick="shareCustomerLedgerWhatsApp()" class="text-emerald-400 text-xs font-bold"><i class="fa-brands fa-whatsapp"></i> खाता भेजें</button><button onclick="closeModal('modal-customer-ledger')" class="text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button></div>
       </div>
       <div class="grid grid-cols-3 gap-2 text-center">
         <div class="bg-slate-800 rounded-lg p-2"><p class="text-[10px] text-slate-400">कुल बिक्री</p><b id="cl-sales" class="text-sm">₹0</b></div>
@@ -1273,6 +1293,8 @@
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">सप्लायर का नाम</label>
             <input type="text" id="pur-supplier-name" required placeholder="उदा. मित्तल ट्रेडर्स" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100">
+            <label class="block text-xs font-semibold text-slate-300 mb-1 mt-2">सप्लायर मोबाइल / WhatsApp</label>
+            <input type="tel" id="pur-supplier-mobile" inputmode="tel" placeholder="10 अंकों का मोबाइल नंबर" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100">
           </div>
         </div>
 
@@ -1490,6 +1512,7 @@
         logoUrl: "",
         upiId: "9876543210@paytm",
         upiName: "UJJWALJI ASHISH KUMAR",
+        companyProfile: { name: "UJJWALJI", owner: "ASHISH KUMAR PORWAL", mobile: "", email: "ujjwaljiofficial@gmail.com", address: "VIKAS KUNJ, DIBIYAPUR, DISTT.- AURAIYA, UTTAR PRADESH (206244)", licenses: [{ type: "UDYAM", number: "UDYAM-UP-06-0025619" }] },
         appRateLocked: true,
         moduleLocks: { purchases: true, workers: true, settings: true },
         blockedMobiles: []
@@ -1504,6 +1527,7 @@
       bills: [],
       purchases: [],
       suppliers: [],
+      companyLedger: [],
       production: [],
       workers: [
         { id: "work-1", name: "रामू यादव", mobile: "9876541230", bankUpi: "9876541230@paytm", dailyWage: 500, attendance: {}, advances: [], payments: [] }
@@ -1512,6 +1536,9 @@
       updatedAt: Date.now()
     };
 
+    state.companyLedger = Array.isArray(state.companyLedger) ? state.companyLedger : [];
+    state.settings.companyProfile = state.settings.companyProfile || { name: state.user.companyName || "UJJWALJI", owner: "", mobile: "", email: "", address: "", licenses: [] };
+    state.suppliers = Array.isArray(state.suppliers) ? state.suppliers : [];
     let cartItems = [];
     let activeCustomerMode = 'saved';
     let selectedCustomerId = null;
@@ -1956,6 +1983,9 @@
       document.getElementById('setting-sync-room-id').value = state.settings.syncRoomId || DEFAULT_COMPANY_ID;
       document.getElementById('setting-upi-id').value = state.settings.upiId || "";
       document.getElementById('setting-upi-name').value = state.settings.upiName || "";
+      const cp=state.settings.companyProfile||{};
+      ['name','owner','mobile','email','address'].forEach(k=>{const el=document.getElementById('setting-company-'+k); if(el) el.value=cp[k]||'';});
+      renderCompanyLicenseRows();
     }
 
     /* 1. DASHBOARD & INTERACTIVE WIDGETS */
@@ -2741,6 +2771,47 @@
       showToast('ग्राहक का भुगतान खाते में दर्ज हो गया');
     }
 
+    function shareCustomerLedgerWhatsApp() {
+      const id=document.getElementById('cl-customer-id')?.value; const c=state.customers.find(x=>x.id===id); if(!c?.mobile) return showToast('ग्राहक का मोबाइल नंबर उपलब्ध नहीं है');
+      const msg=`${state.settings.companyProfile?.name||'UJJWALJI'} खाता विवरण\nग्राहक: ${c.shopName||c.name}\nकुल बकाया: ₹${Number(c.dues||0).toLocaleString('en-IN')}\nकृपया भुगतान की पुष्टि करें।`;
+      window.open(`https://wa.me/91${String(c.mobile).replace(/\D/g,'').slice(-10)}?text=${encodeURIComponent(msg)}`,'_blank');
+    }
+    function recordSupplierPayment(id) {
+      if(!isOwner()&&!isManager()) return showToast('सप्लायर भुगतान का अधिकार नहीं है','fa-lock');
+      const s=state.suppliers.find(x=>x.id===id); if(!s) return;
+      const raw=prompt(`${s.name} को कितना भुगतान किया? वर्तमान बकाया ₹${s.dues||0}`); if(raw===null) return;
+      const amount=Number(raw); if(!(amount>0)) return showToast('सही रकम दर्ज करें');
+      if(amount>Number(s.dues||0) && !confirm('भुगतान सप्लायर के बकाया से अधिक है। क्या एडवांस दर्ज करें?')) return;
+      s.ledger=Array.isArray(s.ledger)?s.ledger:[]; s.ledger.push({id:`sup-pay-${Date.now()}`,type:'payment',date:new Date().toISOString(),debit:0,credit:amount,note:'सप्लायर भुगतान'}); s.dues=Math.max(0,Number(s.dues||0)-amount);
+      saveAndSyncState(); renderPurchasesView(); showToast('सप्लायर भुगतान खाते में दर्ज हुआ');
+    }
+    function shareSupplierLedgerWhatsApp(id) {
+      const s=state.suppliers.find(x=>x.id===id); if(!s) return;
+      if(!s.mobile) return showToast('सप्लायर का मोबाइल नंबर सेव नहीं है। सप्लायर प्रोफाइल में नंबर जोड़ें।');
+      const msg=`${state.settings.companyProfile?.name||'UJJWALJI'} सप्लायर खाता\nसप्लायर: ${s.name}\nकुल खरीद: ₹${Number(s.totalBought||0).toLocaleString('en-IN')}\nवर्तमान बकाया: ₹${Number(s.dues||0).toLocaleString('en-IN')}`;
+      window.open(`https://wa.me/91${String(s.mobile).replace(/\D/g,'').slice(-10)}?text=${encodeURIComponent(msg)}`,'_blank');
+    }
+    function addCompanyLedgerEntry(e) {
+      e.preventDefault(); if(!isOwner()&&!isManager()) return showToast('कंपनी खाते का अधिकार नहीं है','fa-lock');
+      const type=document.getElementById('company-ledger-type').value, amount=Number(document.getElementById('company-ledger-amount').value);
+      if(!(amount>0)) return showToast('रकम सही दर्ज करें');
+      state.companyLedger=Array.isArray(state.companyLedger)?state.companyLedger:[];
+      state.companyLedger.push({id:`co-ledger-${Date.now()}`,type,amount,category:document.getElementById('company-ledger-category').value.trim(),note:document.getElementById('company-ledger-note').value.trim(),date:new Date().toISOString(),by:state.user?.name||''});
+      e.target.reset(); saveAndSyncState(); renderPurchasesView(); showToast('कंपनी खाते की एंट्री सेव हुई');
+    }
+    function renderCompanyLedger() {
+      const list=document.getElementById('company-ledger-list'); if(!list) return;
+      const rows=state.companyLedger||[]; const income=rows.filter(x=>x.type==='income').reduce((a,x)=>a+Number(x.amount||0),0); const expense=rows.filter(x=>x.type==='expense').reduce((a,x)=>a+Number(x.amount||0),0);
+      document.getElementById('company-ledger-income').textContent=`₹${income.toLocaleString('en-IN')}`; document.getElementById('company-ledger-expense').textContent=`₹${expense.toLocaleString('en-IN')}`; document.getElementById('company-ledger-balance').textContent=`₹${(income-expense).toLocaleString('en-IN')}`;
+      list.innerHTML=rows.slice().reverse().map(x=>`<div class="flex justify-between gap-2 bg-slate-900 rounded-lg p-2 text-xs"><div><b>${x.category||'अन्य'}</b><small class="block text-slate-400">${new Date(x.date).toLocaleDateString('en-IN')} · ${x.note||''}</small></div><b class="${x.type==='income'?'text-emerald-400':'text-rose-400'}">${x.type==='income'?'+':'−'}₹${Number(x.amount).toLocaleString('en-IN')}</b></div>`).join('')||'<p class="text-xs text-slate-500">अभी कोई एंट्री नहीं है।</p>';
+    }
+    function addCompanyLicenseRow(item={type:'',number:''}) {
+      const box=document.getElementById('company-licenses-list'); if(!box) return;
+      const row=document.createElement('div'); row.className='grid grid-cols-[1fr_1fr_auto] gap-2';
+      row.innerHTML=`<input data-license-type placeholder="लाइसेंस प्रकार (FSSAI/GST आदि)" value="${String(item.type||'').replace(/"/g,'&quot;')}" class="bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-100"><input data-license-number placeholder="लाइसेंस / रजिस्ट्रेशन नंबर" value="${String(item.number||'').replace(/"/g,'&quot;')}" class="bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-100"><button type="button" class="text-rose-400 px-2" aria-label="हटाएँ" onclick="this.parentElement.remove()">×</button>`; box.appendChild(row);
+    }
+    function renderCompanyLicenseRows() { const box=document.getElementById('company-licenses-list'); if(!box) return; box.innerHTML=''; const items=state.settings.companyProfile?.licenses||[]; (items.length?items:[{type:'',number:''}]).forEach(x=>addCompanyLicenseRow(x)); }
+
     function setupDatalists() {
       const areaNames = Array.from(new Set(state.customers.map(c => c.areaName).filter(Boolean)));
       const areaCodes = Array.from(new Set(state.customers.map(c => c.areaCode).filter(Boolean)));
@@ -3195,23 +3266,19 @@
         supBox.innerHTML = `<p class="text-xs text-slate-500 italic p-2">कोई सप्लायर डेटा नहीं</p>`;
       } else {
         supBox.innerHTML = state.suppliers.map(s => `
-          <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-700 flex items-center justify-between text-xs">
-            <div>
-              <p class="font-bold text-slate-200">${s.name}</p>
-              <p class="text-[10px] text-slate-400">कुल खरीद: ₹${s.totalBought||0}</p>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] text-slate-400">देना:</span>
-              <p class="font-bold text-cyan-400">₹${s.dues||0}</p>
-            </div>
+          <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-700 space-y-2 text-xs">
+            <div class="flex items-center justify-between"><div><p class="font-bold text-slate-200">${s.name}</p><p class="text-[10px] text-slate-400">कुल खरीद: ₹${s.totalBought||0}</p></div><div class="text-right"><span class="text-[10px] text-slate-400">सप्लायर को देना:</span><p class="font-bold text-cyan-400">₹${s.dues||0}</p></div></div>
+            <div class="flex flex-wrap gap-2"><button onclick="recordSupplierPayment('${s.id}')" class="text-emerald-400 font-bold">₹ जमा दर्ज करें</button><button onclick="shareSupplierLedgerWhatsApp('${s.id}')" class="text-emerald-400 font-bold"><i class="fa-brands fa-whatsapp"></i> खाता भेजें</button></div>
           </div>
         `).join('');
       }
+      renderCompanyLedger();
     }
 
     function openPurchaseModal() {
       if (!isOwner() && !isManager()) { showToast('खरीद का अधिकार नहीं है', 'fa-lock'); return; }
       document.getElementById('pur-supplier-name').value = '';
+      document.getElementById('pur-supplier-mobile').value = '';
       document.getElementById('pur-item-details').value = '';
       document.getElementById('pur-total-amount').value = '';
       document.getElementById('pur-paid-amount').value = '0';
@@ -3224,6 +3291,7 @@
       const photoUrl = document.getElementById('pur-photo-preview').dataset.url || '';
       
       const supplierName = document.getElementById('pur-supplier-name').value.trim();
+      const supplierMobile = document.getElementById('pur-supplier-mobile').value.trim();
       const totalAmount = parseFloat(document.getElementById('pur-total-amount').value) || 0;
       const paidAmount = parseFloat(document.getElementById('pur-paid-amount').value) || 0;
       const dues = Math.max(0, totalAmount - paidAmount);
@@ -3232,6 +3300,7 @@
         id: `pur-${Date.now()}`,
         date: document.getElementById('pur-date').value,
         supplierName,
+        supplierMobile,
         itemDetails: document.getElementById('pur-item-details').value.trim(),
         totalAmount,
         paidAmount,
@@ -3246,12 +3315,17 @@
       if (sup) {
         sup.totalBought = (sup.totalBought || 0) + totalAmount;
         sup.dues = (sup.dues || 0) + dues;
+        if(supplierMobile) sup.mobile=supplierMobile;
+        sup.ledger = Array.isArray(sup.ledger) ? sup.ledger : [];
+        sup.ledger.push({id:`sup-tx-${Date.now()}`,type:'purchase',date:new Date().toISOString(),debit:dues,credit:paidAmount,amount:totalAmount,note:purchaseObj.itemDetails,ref:purchaseObj.id});
       } else {
         state.suppliers.push({
           id: `sup-${Date.now()}`,
           name: supplierName,
+          mobile: supplierMobile,
           totalBought: totalAmount,
-          dues: dues
+          dues: dues,
+          ledger: [{id:`sup-tx-${Date.now()}`,type:'purchase',date:new Date().toISOString(),debit:dues,credit:paidAmount,amount:totalAmount,note:purchaseObj.itemDetails,ref:purchaseObj.id}]
         });
       }
 
@@ -3264,8 +3338,11 @@
     /* 8. DAILY PRODUCTION ENGINE */
     function renderProductionView() {
       const pSelect = document.getElementById('prod-product-id');
-      pSelect.innerHTML = `<option value="">-- उत्पाद चुनें --</option>` +
-        state.products.map(p => `<option value="${p.id}">${p.name} (वर्तमान: ${p.stock})</option>`).join('');
+      const previous=pSelect.value;
+      const q=(document.getElementById('prod-product-search')?.value||'').trim().toLowerCase();
+      const matches=state.products.filter(p=>!q || (p.name||'').toLowerCase().includes(q) || (p.code||'').toLowerCase().includes(q) || (p.id||'').toLowerCase().includes(q));
+      pSelect.innerHTML = `<option value="">-- उत्पाद चुनें --</option>` + matches.map(p => `<option value="${p.id}">${p.name} (स्टॉक: ${p.stock||0})</option>`).join('');
+      if(matches.some(p=>p.id===previous)) pSelect.value=previous;
 
       const historyBox = document.getElementById('production-history-container');
       if (state.production.length === 0) {
@@ -3282,6 +3359,9 @@
         `).join('');
       }
     }
+
+    function filterProductionProducts(query) { const el=document.getElementById('prod-product-id'); const q=(query||'').trim().toLowerCase(); const old=el.value; const items=state.products.filter(p=>!q||(p.name||'').toLowerCase().includes(q)||(p.code||'').toLowerCase().includes(q)||(p.id||'').toLowerCase().includes(q)); el.innerHTML='<option value="">-- उत्पाद चुनें --</option>'+items.map(p=>`<option value="${p.id}">${p.name} (स्टॉक: ${p.stock||0})</option>`).join(''); if(items.some(p=>p.id===old)) el.value=old; else if(items.length===1) el.value=items[0].id; }
+    function syncProductionProductSearch() { const p=state.products.find(x=>x.id===document.getElementById('prod-product-id').value); const search=document.getElementById('prod-product-search'); if(p&&search) search.value=p.name; }
 
     function handleSaveProduction(e) {
       if (!isOwner() && !isManager()) { e.preventDefault(); showToast('आप केवल उत्पादन देख सकते हैं', 'fa-lock'); return; }
@@ -3578,6 +3658,10 @@
     function saveBusinessSettings() {
       state.settings.upiId = document.getElementById('setting-upi-id').value.trim();
       state.settings.upiName = document.getElementById('setting-upi-name').value.trim();
+      state.settings.companyProfile = state.settings.companyProfile || {};
+      ['name','owner','mobile','email','address'].forEach(k=>{const el=document.getElementById('setting-company-'+k); if(el) state.settings.companyProfile[k]=el.value.trim();});
+      state.settings.companyProfile.licenses=Array.from(document.querySelectorAll('#company-licenses-list > div')).map(row=>({type:row.querySelector('[data-license-type]')?.value.trim()||'',number:row.querySelector('[data-license-number]')?.value.trim()||''})).filter(x=>x.type||x.number);
+      state.user.companyName=state.settings.companyProfile.name||state.user.companyName;
       saveAndSyncState();
       showToast("बिज़नेस सेटिंग्स सेव हुईं!");
     }
