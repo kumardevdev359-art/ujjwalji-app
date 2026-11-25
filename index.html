@@ -574,6 +574,11 @@
           <span><i class="fa-solid fa-circle text-blue-400"></i> नया ग्राहक (रिकॉर्ड के आधार पर)</span>
         </div>
       </div>
+      <div class="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2"><h3 class="font-bold text-amber-300"><i class="fa-solid fa-wallet"></i> Area Collection Planning</h3><button type="button" onclick="generateAreaCollectionList()" class="gold-gradient text-slate-950 font-bold text-xs px-3 py-2 rounded-lg">चुने हुए एरिया की Collection List बनाएं</button></div>
+        <p class="text-xs text-slate-400">क्षेत्र चुनने पर उस क्षेत्र के बकायेदार ग्राहकों की वसूली सूची तैयार होगी। कर्मचारी प्राप्त रकम और अगली तारीख दर्ज कर सकते हैं।</p>
+        <div id="area-collection-list" class="space-y-2"></div>
+      </div>
       <div id="area-intel-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
       <p class="text-[11px] text-slate-500 border-t border-slate-800 pt-3">ध्यान दें: यह स्क्रीन केवल ऐप में पहले से दर्ज ग्राहक/दुकानदार रिकॉर्ड दिखाती है। कर्मचारी की लाइव लोकेशन या आसपास मौजूदगी का पता बिना स्पष्ट अनुमति और लोकेशन डेटा के नहीं लगाया जाता।</p>
     </section>
@@ -2452,13 +2457,14 @@
       if (totalCell) totalCell.textContent = `₹${item.total.toFixed(2).replace(/\.00$/,'')}`;
       calculateBillTotals();
     }
+    function adjustCartQty(index, delta) { const item=cartItems[index]; if(!item) return; const next=Math.max(0.01,Number(item.qty||0)+Number(delta)); updateCartItem(index,'qty',next); renderBillCart(); calculateBillTotals(); }
     function removeCartItem(index) { cartItems.splice(index, 1); renderBillCart(); calculateBillTotals(); }
     function renderBillCart() {
       const tbody = document.getElementById('bill-cart-items-body');
       if (!cartItems.length) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500 italic">कोई सामान नहीं जोड़ा गया</td></tr>`; return; }
       tbody.innerHTML = cartItems.map((item, idx) => `<tr>
         <td class="p-2.5 font-bold text-slate-100">${escapeHTML(item.name)}<div class="text-[10px] text-slate-500">${escapeHTML(item.unit || '')}</div></td>
-        <td class="p-2 text-center"><input aria-label="मात्रा" type="number" min="0.01" step="any" value="${Number(item.qty)}" onchange="updateCartItem(${idx},'qty',this.value)" class="w-20 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-center text-slate-100"></td>
+        <td class="p-2 text-center"><div class="inline-flex items-center gap-1"><button type="button" onclick="adjustCartQty(${idx},-1)" class="w-7 h-7 rounded bg-slate-700 text-white font-black" aria-label="मात्रा घटाएं">−</button><input aria-label="मात्रा" type="number" min="0.01" step="any" value="${Number(item.qty)}" onchange="updateCartItem(${idx},'qty',this.value)" class="w-14 bg-slate-900 border border-slate-700 rounded px-1 py-1 text-center text-slate-100"><button type="button" onclick="adjustCartQty(${idx},1)" class="w-7 h-7 rounded bg-amber-500 text-slate-950 font-black" aria-label="मात्रा बढ़ाएं">+</button></div></td>
         <td class="p-2 text-right"><input aria-label="दर" type="number" min="0" step="any" value="${Number(item.rate)}" onchange="updateCartItem(${idx},'rate',this.value)" class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-right text-slate-100"></td>
         <td id="cart-line-total-${idx}" class="p-2.5 text-right font-mono font-bold text-amber-400">₹${Number(item.total).toFixed(2).replace(/\.00$/,'')}</td>
         <td class="p-2.5 text-center"><button type="button" onclick="removeCartItem(${idx})" class="text-rose-400 hover:text-rose-300" aria-label="हटाएँ"><i class="fa-solid fa-trash-can"></i></button></td>
@@ -2556,7 +2562,9 @@
       const discVal = parseFloat(document.getElementById('bill-discount-val').value) || 0;
       let discountAmount = (discType === 'percent') ? Math.round((subtotal * discVal) / 100) : discVal;
       const netTotal = Math.max(0, subtotal - discountAmount);
-      const paidAmount = parseFloat(document.getElementById('bill-paid-amount').value) || 0;
+      let paidAmount = parseFloat(document.getElementById('bill-paid-amount').value) || 0;
+      if(paidAmount<0){ billSaveInProgress=false; showToast('भुगतान राशि गलत है','fa-triangle-exclamation'); return; }
+      if(paidAmount>netTotal){ billSaveInProgress=false; showToast('प्राप्त भुगतान बिल राशि से अधिक है। एडवांस भुगतान अलग से दर्ज करें।','fa-triangle-exclamation'); return; }
       const remainingDues = Math.max(0, netTotal - paidAmount);
       const payMode = document.getElementById('bill-payment-mode').value;
       const offerTag = document.getElementById('bill-offer-tag').value.trim();
@@ -2592,9 +2600,10 @@
       // Update Customer Dues & 60-Hanger Progress
       if (targetCust) {
         if (!Array.isArray(targetCust.ledger)) { targetCust.openingDues = Number(targetCust.dues || 0); targetCust.ledger = []; }
-        targetCust.dues = (targetCust.dues || 0) + remainingDues;
+        targetCust.dues = Math.max(0, Number(targetCust.dues || 0) + (remainingDues > 0 ? remainingDues : 0));
         targetCust.hangerCurrent = (targetCust.hangerCurrent || 0) + cartItems.reduce((acc, i) => acc + i.qty, 0);
         targetCust.ledger.push({id:`bill-ledger-${newBill.id}`, type:'bill', date:new Date().toISOString(), ref:newBill.id, debit:netTotal, credit:paidAmount, mode:payMode, note:`बिल ${newBill.id}`});
+        targetCust.dues = recalculateCustomerDuesFromLedger(targetCust);
         newBill.closingDues = targetCust.dues;
       }
 
@@ -2782,7 +2791,7 @@
                   ${c.photo ? `<img src="${c.photo}" class="w-full h-full object-cover">` : c.name.charAt(0)}
                 </div>
                 <div>
-                  <h3 class="font-bold text-slate-100 text-sm">${c.shopName || c.name}</h3>
+                  <h3 onclick="openCustomerLedger('${c.id}')" role="button" tabindex="0" class="font-bold text-slate-100 text-sm cursor-pointer hover:text-amber-300" title="ग्राहक खाता खोलें">${c.shopName || c.name} <i class="fa-solid fa-book-open text-amber-400 text-[10px]"></i></h3>
                   <p class="text-[11px] text-slate-400">${c.name} | <span class="font-mono text-amber-400 font-bold">${c.code}</span></p>
                 </div>
               </div>
@@ -2832,6 +2841,26 @@
       }).join('');
     }
 
+
+    function generateAreaCollectionList() {
+      const selectedArea=document.getElementById('area-intel-area')?.value||'';
+      const customers=(state.customers||[]).filter(c=>Number(c.dues||0)>0 && (!selectedArea || (c.areaName||c.city||c.district||'')===selectedArea)).sort((a,b)=>Number(b.dues||0)-Number(a.dues||0));
+      const box=document.getElementById('area-collection-list'); if(!box) return;
+      if(!customers.length){box.innerHTML='<p class="text-xs text-slate-400">इस क्षेत्र में बकाया ग्राहक नहीं हैं।</p>';return;}
+      const total=customers.reduce((sum,c)=>sum+Number(c.dues||0),0);
+      box.innerHTML=`<div class="bg-slate-900 rounded-lg p-2 flex justify-between text-sm"><b>${selectedArea||'सभी क्षेत्र'} · ${customers.length} ग्राहक</b><b class="text-rose-300">कुल ₹${total.toLocaleString('en-IN')}</b></div>`+customers.map(c=>`<div class="bg-slate-900 border border-slate-700 rounded-lg p-2 space-y-2"><div class="flex justify-between gap-2"><button type="button" onclick="openCustomerLedger('${c.id}')" class="text-left font-bold text-amber-300">${escapeHTML(c.shopName||c.name)}</button><b class="text-rose-300">₹${Number(c.dues||0).toLocaleString('en-IN')}</b></div><small class="text-slate-400">${escapeHTML(c.mobile||'मोबाइल नहीं')} · ${escapeHTML(c.areaName||'')}</small><div class="grid grid-cols-2 gap-2"><select id="collect-status-${c.id}" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs"><option value="pending">Pending</option><option value="collected">Collected</option><option value="not-found">ग्राहक नहीं मिला</option><option value="next-date">अगली तारीख</option></select><input id="collect-amount-${c.id}" type="number" min="0" max="${Number(c.dues||0)}" placeholder="प्राप्त ₹" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs"></div><div class="grid grid-cols-2 gap-2"><input id="collect-date-${c.id}" type="date" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs"><input id="collect-note-${c.id}" placeholder="नोट / कारण" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs"></div><button type="button" onclick="saveAreaCollection('${c.id}')" class="w-full bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 rounded py-1.5 text-xs font-bold">स्थिति / भुगतान सेव करें</button></div>`).join('');
+    }
+    function saveAreaCollection(customerId) {
+      const c=state.customers.find(x=>x.id===customerId); if(!c) return;
+      const status=document.getElementById(`collect-status-${customerId}`)?.value||'pending';
+      const amount=Number(document.getElementById(`collect-amount-${customerId}`)?.value||0);
+      const nextDate=document.getElementById(`collect-date-${customerId}`)?.value||'';
+      const note=document.getElementById(`collect-note-${customerId}`)?.value||'';
+      if(amount<0||amount>Number(c.dues||0)) return showToast('प्राप्त रकम बकाया से अधिक/गलत है','fa-triangle-exclamation');
+      if(amount>0){ if(!Array.isArray(c.ledger)) c.ledger=[]; const pid='COL-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6); c.ledger.push({id:pid,type:'payment',date:new Date().toISOString(),ref:pid,debit:0,credit:amount,mode:'Cash',note:'Area Collection: '+note,deviceId:getSyncDeviceId()}); c.dues=Math.max(0,Number(c.dues||0)-amount); }
+      c.collectionHistory=Array.isArray(c.collectionHistory)?c.collectionHistory:[]; c.collectionHistory.push({id:'COL-STATUS-'+Date.now(),date:new Date().toISOString(),status,amount,nextDate,note,by:state.user?.name||'Unknown',deviceId:getSyncDeviceId()});
+      saveAndSyncState(); renderCustomersList(); renderAreaIntelligence(); generateAreaCollectionList(); showToast('Collection स्थिति सेव हुई');
+    }
 
     function renderAreaIntelligence() {
       const customers = Array.isArray(state.customers) ? state.customers : [];
@@ -3075,6 +3104,14 @@
       document.getElementById('cl-due').textContent=`₹${Number(c.dues||0).toLocaleString('en-IN')}`;
       document.getElementById('modal-customer-ledger').classList.remove('hidden');
     }
+    function recalculateCustomerDuesFromLedger(customer) {
+      if(!customer || !Array.isArray(customer.ledger)) return Number(customer?.dues||0);
+      let balance=Number(customer.openingDues||0);
+      customer.ledger.forEach(tx=>{ balance+=Number(tx.debit||0)-Number(tx.credit||0); });
+      customer.dues=Math.max(0,Math.round((balance+Number.EPSILON)*100)/100);
+      return customer.dues;
+    }
+
     function saveCustomerPayment(e) {
       e.preventDefault();
       const submitNow=Date.now();
@@ -3091,7 +3128,7 @@
         if(amount>Number(c.dues||0) && !confirm('जमा रकम वर्तमान बकाया से अधिक है। क्या अतिरिक्त रकम एडवांस के रूप में दर्ज करें?')) { customerPaymentSaving=false; return; }
         const paymentId='PAY-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,9).toUpperCase();
         c.ledger.push({id:paymentId,type:'payment',date:new Date().toISOString(),ref:paymentId,debit:0,credit:amount,mode:document.getElementById('cl-payment-mode').value,note:document.getElementById('cl-payment-note').value.trim(),deviceId:getSyncDeviceId()});
-        c.dues=Math.max(0,Number(c.dues||0)-amount);
+        c.dues=recalculateCustomerDuesFromLedger(c);
         saveAndSyncState(); renderCustomersList(); openCustomerLedger(id);
         showToast('भुगतान लोकल में सेव हुआ; क्लाउड सिंक स्थिति ऊपर देखें');
       } finally { customerPaymentSaving=false; }
