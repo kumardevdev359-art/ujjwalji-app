@@ -2,6 +2,7 @@
 <html lang="hi" class="h-full bg-slate-900">
 <head>
   <meta charset="UTF-8">
+<meta name="ujjwalji-build" content="V9-SuperApp-UI-FinancialConsistency">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>UJJWALJI — All-in-One Business Management</title>
   
@@ -88,6 +89,26 @@
 #customer-ledger-rows>div{transition:transform .15s ease,border-color .15s ease}
 #customer-ledger-rows>div:hover{transform:translateY(-1px);border-color:#d99a18}
 </style>
+
+/* UJJWALJI SUPER APP V9 — responsive consistency layer */
+<style id="ujjwalji-superapp-v9-style">
+:root{--ujj-gold:#f5ad18;--ujj-bg:#0f172a;--ujj-card:#1e293b;--ujj-border:#334155}
+html{scroll-behavior:smooth} body{max-width:100vw;overflow-x:hidden}
+button,[role=button]{touch-action:manipulation;min-height:40px}
+input,select,textarea{max-width:100%;min-width:0}
+.modal, [id^="modal-"]{max-width:100vw}
+.table-responsive,.overflow-x-auto{overscroll-behavior-x:contain}
+@media(max-width:640px){.container,.max-w-7xl,.max-w-6xl,.max-w-5xl,.max-w-4xl{max-width:100%!important}
+.grid-cols-5{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-cols-3{grid-template-columns:repeat(2,minmax(0,1fr))}
+.p-8{padding:1rem!important}.p-6{padding:1rem!important}
+.text-3xl{font-size:1.5rem!important}.text-2xl{font-size:1.3rem!important}
+button{white-space:normal;line-height:1.25}
+}
+.ujj-v9-focus{outline:2px solid var(--ujj-gold);outline-offset:2px}
+</style>
+
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-slate-900">
 
@@ -2609,10 +2630,19 @@
         customerShop: custShop,
         customerPhone: custPhone,
         customerArea: custArea,
-        items: [...cartItems],
+        items: cartItems.map((item,idx)=>{
+          const gross=Number(item.total||((Number(item.rate||item.price||0))*Number(item.qty||item.quantity||1)));
+          const eligible=item.offerEligible!==false;
+          const eligibleGross=offerSubtotal||1;
+          const allocatedDiscount=eligible?Math.min(gross, discountAmount*(gross/eligibleGross)):0;
+          const netLine=Math.max(0,gross-allocatedDiscount);
+          const allocatedPaid=netTotal>0?paidAmount*(netLine/netTotal):0;
+          return {...item, grossLineTotal:gross, allocatedDiscount, netLineTotal:netLine, allocatedPaid, itemOutstanding:Math.max(0,netLine-allocatedPaid)};
+        }),
         subtotal,
         offerTag,
         discountAmount,
+        discountAllocationMethod:'proportional_to_offer_eligible_line_value',
         netTotal,
         paidAmount,
         remainingDues,
@@ -3153,10 +3183,21 @@
         const advances=tx.filter(t=>t.purpose==='advance'||t.type==='advance');
         out.innerHTML=`<div class="bg-cyan-900/30 rounded-xl p-3"><b>वर्तमान एडवांस: ${money(c.advance||0)}</b></div>`+(advances.map(t=>`<div class="border border-cyan-500/20 bg-slate-800 rounded-xl p-3"><div class="flex justify-between"><b>${new Date(t.date).toLocaleDateString('en-IN')} · ${t.mode||''}</b><b class="text-cyan-300">${money(t.credit||t.amount)}</b></div><small>${t.note||'एडवांस जमा'}</small></div>`).join('')||'<p class="text-slate-400 text-center p-4">अलग एडवांस एंट्री नहीं मिली।</p>');
       } else {
-        let due=Math.max(0,Number(c.dues||0)); const billDue=bills.map(b=>({bill:b,remaining:Math.max(0,Number(b.remainingDues||0))})).filter(x=>x.remaining>0); let allocations=[];
-        // Existing legacy/current due may not have per-bill allocation; allocate remaining balance FIFO across open bills, then show unlinked remainder.
-        let left=due; for(const x of billDue){const alloc=Math.min(left,x.remaining);if(alloc>0){allocations.push({bill:x.bill,amount:alloc});left-=alloc;}}
-        out.innerHTML=`<div class="bg-rose-900/30 rounded-xl p-3"><b>कुल वर्तमान बकाया: ${money(due)}</b><small class="block text-slate-400">बिलों पर उपलब्ध विवरण के अनुसार बकाया दिखाया गया है। पुराना/अलग हिसाब यदि बिल से लिंक नहीं है तो नीचे अलग दिखेगा।</small></div>`+allocations.map(x=>`<div class="border border-rose-500/20 bg-slate-800 rounded-xl p-3"><b>बिल ${x.bill.id}</b><div class="mt-2 space-y-1">${(x.bill.items||[]).map(i=>{const line=Number(i.total||((i.price||i.rate||0)*(i.qty||i.quantity||1)));const share=Number(x.bill.netTotal||0)>0?line/Number(x.bill.netTotal||1):0;const itemDue=x.amount*share;return `<div class="flex justify-between gap-2 text-sm"><span>${i.name||i.productName||i.title||'Item'} × ${i.qty||i.quantity||1}</span><span>${money(line)} <small class="text-rose-300">(अनुमानित बकाया ${money(itemDue)})</small></span></div>`}).join('')}</div><b class="block text-right text-rose-300 mt-1">इस बिल का बकाया: ${money(x.amount)}</b><small class="text-slate-400">बिल कुल ${money(x.bill.netTotal)} · तारीख ${x.bill.date||''}</small></div>`).join('')+(left>0?`<div class="border border-amber-500/30 bg-slate-800 rounded-xl p-3"><b>पुराना/बिना बिल लिंक बकाया</b><p class="text-amber-300">${money(left)}</p><small class="text-slate-400">यह राशि पुराने opening due या बिना bill-linked entry से है।</small></div>`:'')||'<p class="text-slate-400">कोई बकाया नहीं।</p>';
+        const due=Math.max(0,Number(c.dues||0));
+        // Bill-linked outstanding is derived from stored item allocations. Legacy bills use proportional allocation of their NET bill, never gross subtotal.
+        const openBills=bills.map(b=>{
+          const billDue=Math.max(0,Number(b.remainingDues||0));
+          const lineItems=(b.items||[]).map(i=>{
+            const gross=Number(i.grossLineTotal??i.total??((i.price||i.rate||0)*(i.qty||i.quantity||1)));
+            const net=Number(i.netLineTotal??(gross*(Number(b.netTotal||0)/Math.max(1,Number(b.subtotal||gross)))));
+            const itemDue=Number.isFinite(Number(i.itemOutstanding))?Math.max(0,Number(i.itemOutstanding)):Math.max(0,net*(billDue/Math.max(1,Number(b.netTotal||0))));
+            return {item:i,gross,net,due:itemDue,method:i.itemOutstanding!==undefined?'saved item allocation':'legacy proportional net-bill allocation'};
+          });
+          return {bill:b,billDue,lineItems};
+        }).filter(x=>x.billDue>0);
+        const linkedTotal=openBills.reduce((a,x)=>a+x.billDue,0);
+        const unlinked=Math.max(0,due-linkedTotal);
+        out.innerHTML=`<div class="bg-rose-900/30 rounded-xl p-3 mb-3"><b>कुल वर्तमान बकाया: ${money(due)}</b><small class="block text-slate-300 mt-1">यह बकाया बिल के Net Total, वास्तविक जमा और दर्ज समायोजन से निकाला गया है। पुराने बिल जिनमें सामान-वार allocation सुरक्षित नहीं था, उन्हें Net Bill के अनुपात में दिखाया गया है—अनुमानित gross बकाया नहीं।</small></div>`+openBills.map(x=>`<div class="border border-rose-500/20 bg-slate-800 rounded-xl p-3 mb-3"><div class="flex flex-wrap justify-between gap-2"><b>बिल ${x.bill.id}</b><b class="text-rose-300">बिल बकाया: ${money(x.billDue)}</b></div><small class="text-slate-400">मूल बिल ${money(x.bill.subtotal||x.bill.netTotal)} · छूट ${money(x.bill.discountAmount)} · Net Bill ${money(x.bill.netTotal)} · जमा ${money(x.bill.paidAmount)} · ${x.bill.date||''}</small><div class="mt-3 space-y-2">${x.lineItems.map(li=>`<div class="flex flex-wrap justify-between gap-2 border-b border-slate-700 pb-2 text-sm"><span>${li.item.name||li.item.productName||li.item.title||'सामान'} × ${li.item.qty||li.item.quantity||1}<small class="block text-slate-400">Net सामान राशि ${money(li.net)}</small></span><b class="text-rose-300">बकाया ${money(li.due)}</b></div>`).join('')}</div><b class="block text-right text-rose-300 mt-2">इस बिल का कुल बकाया: ${money(x.billDue)}</b></div>`).join('')+(unlinked>0?`<div class="border border-amber-500/30 bg-slate-800 rounded-xl p-3"><b>पुराना / बिना बिल लिंक बकाया</b><p class="text-amber-300">${money(unlinked)}</p><small class="text-slate-400">यह opening due या ऐसा बकाया है जिसका bill-link उपलब्ध नहीं है।</small></div>`:'')+(due<=0?'<p class="text-slate-400 text-center p-4">कोई बकाया नहीं।</p>':'');
       }
       document.getElementById('modal-khata-breakdown').classList.remove('hidden');
     }
@@ -4100,6 +4141,15 @@
       showToast("कॉपी हुआ!");
     }
   
+
+    /* V9 financial integrity helper: verify customer/bill totals and expose diagnostics without altering historic records. */
+    function ujjwaljiV9FinancialAudit(){
+      const issues=[]; (state.bills||[]).forEach(b=>{const sub=Number(b.subtotal||0),disc=Number(b.discountAmount||0),net=Number(b.netTotal||0),paid=Number(b.paidAmount||0),due=Number(b.remainingDues||0);
+        if(Math.abs((sub-disc)-net)>0.01)issues.push({bill:b.id,issue:'subtotal-discount-net mismatch',subtotal:sub,discount:disc,net});
+        if(Math.abs((net-paid)-due)>0.01)issues.push({bill:b.id,issue:'net-paid-due mismatch',net,paid,due});
+      }); return issues;
+    }
+
     /* ==========================================================================
        UJJWALJI ERP POLICY LAYER V4
        Preserves the existing UI, data model and Firebase company path.
