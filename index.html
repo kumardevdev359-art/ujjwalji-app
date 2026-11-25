@@ -653,13 +653,18 @@
       </div>
       <div class="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl space-y-3">
         <div class="flex items-center justify-between gap-2"><h3 class="text-sm font-bold text-amber-400">कंपनी का अलग खाता (Company Cash / Bank Ledger)</h3><span class="text-[10px] text-slate-400">आय और खर्च</span></div>
-        <form onsubmit="addCompanyLedgerEntry(event)" class="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <form onsubmit="addCompanyLedgerEntry(event)" class="grid grid-cols-2 md:grid-cols-4 gap-2">
           <select id="company-ledger-type" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs"><option value="income">जमा / आय</option><option value="expense">भुगतान / खर्च</option></select>
+          <select id="company-ledger-mode" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs"><option>Cash</option><option>UPI</option><option>Bank</option><option>Other</option></select>
+          <input id="company-ledger-date" type="date" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs">
           <input id="company-ledger-amount" type="number" min="0.01" step="0.01" required placeholder="रकम ₹" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs">
-          <input id="company-ledger-category" required placeholder="खाता / मद" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs">
-          <input id="company-ledger-note" placeholder="विवरण / रेफरेंस" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs">
+          <input id="company-ledger-category" required placeholder="खाता / मद (जैसे किराया, बिक्री)" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs">
+          <input id="company-ledger-note" placeholder="विवरण / रेफरेंस / चेक नं." class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs">
+          <label class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs flex items-center gap-2"><i class="fa-solid fa-camera text-amber-400"></i><span>बिल/रसीद फोटो</span><input id="company-ledger-photo" type="file" accept="image/*" capture="environment" class="hidden" onchange="khataPhotoPreview(this,'company-photo-preview')"></label>
           <button class="bg-emerald-600 rounded-lg px-3 py-2 text-xs font-bold">एंट्री सेव करें</button>
+          <div id="company-photo-preview" class="col-span-full text-xs text-slate-400"></div>
         </form>
+        <div class="flex flex-wrap gap-2"><input id="company-ledger-search" oninput="renderCompanyLedger()" placeholder="कंपनी खाते में खोजें..." class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs flex-1 min-w-[150px]"><select id="company-ledger-filter" onchange="renderCompanyLedger()" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs"><option value="all">सभी लेन-देन</option><option value="income">केवल आय</option><option value="expense">केवल खर्च</option></select><button type="button" onclick="exportCompanyLedgerCSV()" class="bg-slate-700 rounded-lg px-3 py-2 text-xs">CSV Export</button></div>
         <div class="grid grid-cols-3 gap-2 text-center"><div class="bg-slate-900 rounded-lg p-2"><small class="text-slate-400">कुल आय</small><b id="company-ledger-income" class="block text-emerald-400">₹0</b></div><div class="bg-slate-900 rounded-lg p-2"><small class="text-slate-400">कुल खर्च</small><b id="company-ledger-expense" class="block text-rose-400">₹0</b></div><div class="bg-slate-900 rounded-lg p-2"><small class="text-slate-400">नेट बैलेंस</small><b id="company-ledger-balance" class="block text-amber-400">₹0</b></div></div>
         <div id="company-ledger-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
       </div>
@@ -1206,13 +1211,18 @@
         <div class="bg-slate-800 rounded-lg p-2"><p class="text-[10px] text-slate-400">कुल जमा</p><b id="cl-paid" class="text-sm text-emerald-400">₹0</b></div>
         <div class="bg-slate-800 rounded-lg p-2"><p class="text-[10px] text-slate-400">वर्तमान बकाया</p><b id="cl-due" class="text-sm text-rose-400">₹0</b></div>
       </div>
-      <form onsubmit="saveCustomerPayment(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2 bg-slate-800/70 p-3 rounded-xl">
+      <div class="bg-slate-800/70 p-3 rounded-xl space-y-2"><h4 class="text-xs font-bold text-amber-300">नया लेन-देन / नगद या उधार जमा</h4>
+      <form onsubmit="saveCustomerPayment(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <input type="hidden" id="cl-customer-id">
-        <input type="number" id="cl-payment-amount" min="1" step="0.01" required placeholder="जमा रकम ₹" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs">
+        <input type="number" id="cl-payment-amount" min="0.01" step="0.01" required placeholder="रकम ₹" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs">
         <select id="cl-payment-mode" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs"><option>Cash</option><option>UPI</option><option>Bank</option><option>Other</option></select>
-        <input type="text" id="cl-payment-note" placeholder="रसीद / नोट" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs">
-        <button class="bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-2 text-xs font-bold">जमा सेव करें</button>
-      </form>
+        <input type="date" id="cl-payment-date" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs">
+        <input type="text" id="cl-payment-note" placeholder="रसीद / नोट / रेफरेंस" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs">
+        <label class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs flex items-center gap-2"><i class="fa-solid fa-camera text-amber-400"></i>पेपर बिल/रसीद फोटो<input type="file" id="cl-payment-photo" accept="image/*" capture="environment" class="hidden" onchange="khataPhotoPreview(this,'cl-photo-preview')"></label>
+        <div id="cl-photo-preview" class="text-xs text-slate-400 self-center"></div>
+        <button class="bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-2 text-xs font-bold sm:col-span-2">लेन-देन सेव करें</button>
+      </form></div>
+      <div class="flex flex-wrap gap-2"><input id="cl-search" oninput="renderCustomerLedgerRows()" placeholder="खाते में बिल/जमा/नोट खोजें" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs flex-1 min-w-[150px]"><select id="cl-filter" onchange="renderCustomerLedgerRows()" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs"><option value="all">सभी</option><option value="bill">बिल</option><option value="payment">जमा</option></select><button type="button" onclick="exportCustomerLedgerCSV()" class="bg-slate-700 rounded-lg px-3 py-2 text-xs">CSV Export</button></div>
       <div id="customer-ledger-rows" class="space-y-2"></div>
     </div>
   </div>
@@ -2613,6 +2623,7 @@
 
       if (newBill.closingDues === undefined) newBill.closingDues = remainingDues;
       state.bills.push(newBill);
+      if (paidAmount > 0) { state.companyLedger=Array.isArray(state.companyLedger)?state.companyLedger:[]; const coId=`bill-cash-${newBill.id}`; if(!state.companyLedger.some(x=>x.id===coId)) state.companyLedger.push({id:coId,type:'income',amount:paidAmount,mode:payMode==='Cash'?'Cash':payMode==='UPI'?'UPI':payMode,category:'बिल बिक्री / प्राप्त भुगतान',note:`बिल ${newBill.id} · ${custName}`,date:new Date().toISOString(),by:state.user?.name||'',deviceId:getSyncDeviceId(),linkedBillId:newBill.id}); }
       saveAndSyncState();
       billSaveInProgress = false;
       if (billIdEl) delete billIdEl.dataset.billId;
@@ -3079,47 +3090,38 @@
       }, err => { showToast(err.code===1?'लोकेशन अनुमति नहीं मिली':'GPS लोकेशन नहीं मिल सकी', 'fa-triangle-exclamation'); }, {enableHighAccuracy:true, timeout:15000, maximumAge:60000});
     }
 
+    let activeKhataCustomerId = '';
+    function khataPhotoPreview(input, targetId) { const el=document.getElementById(targetId); if(!el) return; el.textContent=input.files?.[0]?.name ? `फोटो चुनी: ${input.files[0].name}` : ''; }
+    function readKhataPhoto(file) { return new Promise((resolve,reject)=>{ if(!file) return resolve(''); if(!file.type.startsWith('image/')) return reject(new Error('केवल फोटो फ़ाइल स्वीकार है')); const img=new Image(), reader=new FileReader(); reader.onload=()=>{img.onload=()=>{const max=1200,scale=Math.min(1,max/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',0.72));};img.onerror=()=>reject(new Error('फोटो पढ़ नहीं सकी'));img.src=reader.result;};reader.onerror=()=>reject(new Error('फोटो फ़ाइल पढ़ने में त्रुटि'));reader.readAsDataURL(file);}); }
+    function renderCustomerLedgerRows() {
+      const c=state.customers.find(x=>x.id===activeKhataCustomerId); if(!c) return;
+      const rows=document.getElementById('customer-ledger-rows'); if(!rows) return;
+      const q=(document.getElementById('cl-search')?.value||'').toLowerCase().trim(), filter=document.getElementById('cl-filter')?.value||'all';
+      const tx=[...(c.ledger||[])].sort((a,b)=>new Date(b.date)-new Date(a.date)); let balance=Number(c.openingDues||0), sales=0, paid=0;
+      const chronological=[...(c.ledger||[])].sort((a,b)=>new Date(a.date)-new Date(b.date)); chronological.forEach(t=>{balance+=Number(t.debit||0)-Number(t.credit||0);sales+=Number(t.debit||0);paid+=Number(t.credit||0);t.runningBalance=balance;});
+      let display=tx.filter(t=>(filter==='all'||t.type===filter)&&(!q||[t.type,t.ref,t.note,t.mode,t.category].join(' ').toLowerCase().includes(q)));
+      let html=`<div class="flex justify-between text-xs bg-slate-800 p-2 rounded-lg"><b>प्रारंभिक बकाया</b><b>₹${Number(c.openingDues||0).toLocaleString('en-IN')}</b></div>`;
+      display.forEach(t=>{const debit=Number(t.debit||0),credit=Number(t.credit||0),rb=Number(t.runningBalance||0);const typeLabel=t.type==='bill'?'बिल / उधार':t.type==='payment'?'जमा / भुगतान':t.type==='return'?'रिटर्न':t.type==='adjustment'?'समायोजन':t.type||'लेन-देन'; html+=`<div class="bg-slate-800/70 border border-slate-700 rounded-lg p-2 space-y-1"><div class="grid grid-cols-5 gap-1 text-[10px] sm:text-xs"><span>${new Date(t.date).toLocaleDateString('en-IN')}</span><b class="col-span-2">${typeLabel}<small class="block text-slate-400 font-normal">${t.ref||''} ${t.mode||''}</small></b><span class="text-right text-rose-300">${debit?`₹${debit.toLocaleString('en-IN')}`:'—'}</span><span class="text-right text-emerald-300">${credit?`₹${credit.toLocaleString('en-IN')}`:'—'}</span></div><div class="text-xs text-slate-300">${t.note||t.category||''}</div><div class="text-right text-xs font-bold">शेष: ₹${rb.toLocaleString('en-IN')}</div>${t.photo?`<a href="${t.photo}" target="_blank" class="text-xs text-sky-300 underline">📷 बिल/रसीद फोटो देखें</a>`:''}</div>`;});
+      if(!display.length) html+=`<p class="text-xs text-slate-500 text-center py-4">फिल्टर के अनुसार कोई लेन-देन नहीं।</p>`;
+      rows.innerHTML=html;
+      document.getElementById('cl-sales').textContent=`₹${sales.toLocaleString('en-IN')}`; document.getElementById('cl-paid').textContent=`₹${paid.toLocaleString('en-IN')}`; document.getElementById('cl-due').textContent=`₹${Number(c.dues||balance||0).toLocaleString('en-IN')}`;
+    }
     function openCustomerLedger(customerId) {
       const c=state.customers.find(x=>x.id===customerId); if(!c) return;
       if(!Array.isArray(c.ledger)) { c.openingDues=Number(c.dues||0); c.ledger=[]; }
-      document.getElementById('cl-customer-id').value=c.id;
-      document.getElementById('customer-ledger-title').textContent=`${c.shopName||c.name} — खाता`;
+      activeKhataCustomerId=customerId; document.getElementById('cl-customer-id').value=c.id;
+      document.getElementById('customer-ledger-title').textContent=`${c.shopName||c.name} — Advanced खाता`;
       document.getElementById('customer-ledger-subtitle').textContent=`${c.name||''} | ${c.mobile||''} | ${c.code||''}`;
-      document.getElementById('cl-payment-amount').value=''; document.getElementById('cl-payment-note').value='';
-      const rows=document.getElementById('customer-ledger-rows');
-      const tx=[...c.ledger].sort((a,b)=>new Date(a.date)-new Date(b.date));
-      let balance=Number(c.openingDues||0), sales=0, paid=0;
-      let html=`<div class="flex justify-between text-xs bg-slate-800 p-2 rounded-lg"><b>प्रारंभिक बकाया</b><b>₹${balance.toLocaleString('en-IN')}</b></div>`;
-      tx.forEach(t=>{ const debit=Number(t.debit||0), credit=Number(t.credit||0); balance+=debit-credit; sales+=debit; paid+=credit; html+=`<div class="grid grid-cols-5 gap-1 text-[10px] sm:text-xs bg-slate-800/70 border border-slate-700 rounded-lg p-2"><span>${new Date(t.date).toLocaleDateString('en-IN')}</span><b class="col-span-2">${t.type==='bill'?'बिल':'जमा'}<small class="block text-slate-400 font-normal">${t.ref||t.note||''} ${t.mode||''}</small></b><span class="text-right text-rose-300">${debit?`₹${debit}`:'—'}</span><span class="text-right text-emerald-300">${credit?`₹${credit}`:'—'}</span><span class="col-span-5 text-right font-bold">शेष: ₹${balance.toLocaleString('en-IN')}</span></div>`; });
-      if(!tx.length) html+=`<p class="text-xs text-slate-500 text-center py-4">अभी कोई लेन-देन दर्ज नहीं है।</p>`;
-      rows.innerHTML=html;
-      document.getElementById('cl-sales').textContent=`₹${sales.toLocaleString('en-IN')}`;
-      document.getElementById('cl-paid').textContent=`₹${paid.toLocaleString('en-IN')}`;
-      document.getElementById('cl-due').textContent=`₹${Number(c.dues||0).toLocaleString('en-IN')}`;
-      document.getElementById('modal-customer-ledger').classList.remove('hidden');
+      document.getElementById('cl-payment-amount').value=''; document.getElementById('cl-payment-note').value=''; document.getElementById('cl-search').value='';document.getElementById('cl-filter').value='all';
+      const dateInput=document.getElementById('cl-payment-date');if(dateInput)dateInput.value=new Date().toISOString().slice(0,10);
+      const photo=document.getElementById('cl-payment-photo');if(photo)photo.value=''; const preview=document.getElementById('cl-photo-preview');if(preview)preview.textContent='';
+      renderCustomerLedgerRows(); document.getElementById('modal-customer-ledger').classList.remove('hidden');
     }
     function saveCustomerPayment(e) {
-      e.preventDefault();
-      const submitNow=Date.now();
-      if(customerPaymentSaving || submitNow-lastCustomerPaymentSubmitAt<1200) return;
-      customerPaymentSaving=true;
-      lastCustomerPaymentSubmitAt=submitNow;
-      try {
-        const id=document.getElementById('cl-customer-id').value;
-        const c=state.customers.find(x=>x.id===id);
-        if(!c) { customerPaymentSaving=false; return; }
-        const amount=Number(document.getElementById('cl-payment-amount').value);
-        if(!(amount>0)) { customerPaymentSaving=false; return showToast('जमा रकम सही दर्ज करें','fa-triangle-exclamation'); }
-        if(!Array.isArray(c.ledger)) { c.openingDues=Number(c.dues||0); c.ledger=[]; }
-        if(amount>Number(c.dues||0) && !confirm('जमा रकम वर्तमान बकाया से अधिक है। क्या अतिरिक्त रकम एडवांस के रूप में दर्ज करें?')) { customerPaymentSaving=false; return; }
-        const paymentId='PAY-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,9).toUpperCase();
-        c.ledger.push({id:paymentId,type:'payment',date:new Date().toISOString(),ref:paymentId,debit:0,credit:amount,mode:document.getElementById('cl-payment-mode').value,note:document.getElementById('cl-payment-note').value.trim(),deviceId:getSyncDeviceId()});
-        c.dues=Math.max(0,Number(c.dues||0)-amount);
-        saveAndSyncState(); renderCustomersList(); openCustomerLedger(id);
-        showToast('भुगतान लोकल में सेव हुआ; क्लाउड सिंक स्थिति ऊपर देखें');
-      } finally { customerPaymentSaving=false; }
+      e.preventDefault(); const submitNow=Date.now(); if(customerPaymentSaving||submitNow-lastCustomerPaymentSubmitAt<1200)return;customerPaymentSaving=true;lastCustomerPaymentSubmitAt=submitNow;
+      (async()=>{try{const id=document.getElementById('cl-customer-id').value,c=state.customers.find(x=>x.id===id);if(!c)return;const amount=Number(document.getElementById('cl-payment-amount').value);if(!(amount>0))return showToast('रकम सही दर्ज करें','fa-triangle-exclamation');if(!Array.isArray(c.ledger)){c.openingDues=Number(c.dues||0);c.ledger=[];}if(amount>Number(c.dues||0)&&Number(c.dues||0)>0&&!confirm('जमा रकम वर्तमान बकाया से अधिक है। अतिरिक्त रकम एडवांस के रूप में दर्ज होगी। जारी रखें?'))return;const photo=await readKhataPhoto(document.getElementById('cl-payment-photo').files?.[0]);const paymentId='PAY-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,9).toUpperCase();const dateVal=document.getElementById('cl-payment-date').value; const previousDue=Math.max(0,Number(c.dues||0));c.ledger.push({id:paymentId,type:'payment',date:dateVal?new Date(dateVal+'T12:00:00').toISOString():new Date().toISOString(),ref:paymentId,debit:0,credit:amount,mode:document.getElementById('cl-payment-mode').value,note:document.getElementById('cl-payment-note').value.trim(),photo,deviceId:getSyncDeviceId(),by:state.user?.name||''});c.dues=Math.max(0,previousDue-amount);c.advance=Math.max(0,Number(c.advance||0)+Math.max(0,amount-previousDue));state.companyLedger=Array.isArray(state.companyLedger)?state.companyLedger:[];const coPayId=`customer-pay-${paymentId}`;if(!state.companyLedger.some(x=>x.id===coPayId))state.companyLedger.push({id:coPayId,type:'income',amount,mode:document.getElementById('cl-payment-mode').value,category:'ग्राहक से जमा',note:`${c.shopName||c.name} · ${paymentId}`,date:dateVal?new Date(dateVal+'T12:00:00').toISOString():new Date().toISOString(),by:state.user?.name||'',deviceId:getSyncDeviceId(),linkedPaymentId:paymentId,photo});saveAndSyncState();renderCustomersList();openCustomerLedger(id);showToast('खाता लेन-देन सेव हुआ');}catch(err){showToast(err.message||'लेन-देन सेव नहीं हो सका','fa-triangle-exclamation');}finally{customerPaymentSaving=false;}})();
     }
-
+    function exportCustomerLedgerCSV(){const c=state.customers.find(x=>x.id===activeKhataCustomerId);if(!c)return;const rows=[['Date','Type','Reference','Debit','Credit','Mode','Note','Balance']];let bal=Number(c.openingDues||0);[...(c.ledger||[])].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(t=>{bal+=Number(t.debit||0)-Number(t.credit||0);rows.push([new Date(t.date).toLocaleDateString('en-IN'),t.type,t.ref,t.debit||0,t.credit||0,t.mode||'',t.note||'',bal]);});const csv='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=`Khata_${(c.shopName||c.name).replace(/[^a-z0-9]/gi,'_')}.csv`;a.click();URL.revokeObjectURL(a.href);}
     function shareCustomerLedgerWhatsApp() {
       const id=document.getElementById('cl-customer-id')?.value; const c=state.customers.find(x=>x.id===id); if(!c?.mobile) return showToast('ग्राहक का मोबाइल नंबर उपलब्ध नहीं है');
       const msg=`${state.settings.companyProfile?.name||'UJJWALJI'} खाता विवरण\nग्राहक: ${c.shopName||c.name}\nकुल बकाया: ₹${Number(c.dues||0).toLocaleString('en-IN')}\nकृपया भुगतान की पुष्टि करें।`;
@@ -3130,8 +3132,9 @@
       const s=state.suppliers.find(x=>x.id===id); if(!s) return;
       const raw=prompt(`${s.name} को कितना भुगतान किया? वर्तमान बकाया ₹${s.dues||0}`); if(raw===null) return;
       const amount=Number(raw); if(!(amount>0)) return showToast('सही रकम दर्ज करें');
+      const modeRaw=prompt('भुगतान माध्यम लिखें: Cash / UPI / Bank / Other','Cash');if(modeRaw===null)return;const mode=['cash','upi','bank','other'].includes(modeRaw.trim().toLowerCase())?modeRaw.trim().toUpperCase():modeRaw.trim();
       if(amount>Number(s.dues||0) && !confirm('भुगतान सप्लायर के बकाया से अधिक है। क्या एडवांस दर्ज करें?')) return;
-      s.ledger=Array.isArray(s.ledger)?s.ledger:[]; s.ledger.push({id:`SUP-PAY-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`,type:'payment',date:new Date().toISOString(),debit:0,credit:amount,note:'सप्लायर भुगतान'}); s.dues=Math.max(0,Number(s.dues||0)-amount);
+      s.ledger=Array.isArray(s.ledger)?s.ledger:[]; const supplierPaymentId=`SUP-PAY-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;s.ledger.push({id:supplierPaymentId,type:'payment',date:new Date().toISOString(),debit:0,credit:amount,note:'सप्लायर भुगतान',mode}); s.dues=Math.max(0,Number(s.dues||0)-amount);state.companyLedger=Array.isArray(state.companyLedger)?state.companyLedger:[];state.companyLedger.push({id:`supplier-payment-${supplierPaymentId}`,type:'expense',amount,mode,category:'सप्लायर भुगतान',note:s.name, date:new Date().toISOString(),by:state.user?.name||'',deviceId:getSyncDeviceId(),linkedSupplierId:id});
       saveAndSyncState(); renderPurchasesView(); showToast('सप्लायर भुगतान खाते में दर्ज हुआ');
     }
     function shareSupplierLedgerWhatsApp(id) {
@@ -3140,20 +3143,9 @@
       const msg=`${state.settings.companyProfile?.name||'UJJWALJI'} सप्लायर खाता\nसप्लायर: ${s.name}\nकुल खरीद: ₹${Number(s.totalBought||0).toLocaleString('en-IN')}\nवर्तमान बकाया: ₹${Number(s.dues||0).toLocaleString('en-IN')}`;
       window.open(`https://wa.me/91${String(s.mobile).replace(/\D/g,'').slice(-10)}?text=${encodeURIComponent(msg)}`,'_blank');
     }
-    function addCompanyLedgerEntry(e) {
-      e.preventDefault(); if(!isOwner()&&!isManager()) return showToast('कंपनी खाते का अधिकार नहीं है','fa-lock');
-      const type=document.getElementById('company-ledger-type').value, amount=Number(document.getElementById('company-ledger-amount').value);
-      if(!(amount>0)) return showToast('रकम सही दर्ज करें');
-      state.companyLedger=Array.isArray(state.companyLedger)?state.companyLedger:[];
-      state.companyLedger.push({id:`co-ledger-${Date.now()}`,type,amount,category:document.getElementById('company-ledger-category').value.trim(),note:document.getElementById('company-ledger-note').value.trim(),date:new Date().toISOString(),by:state.user?.name||''});
-      e.target.reset(); saveAndSyncState(); renderPurchasesView(); showToast('कंपनी खाते की एंट्री सेव हुई');
-    }
-    function renderCompanyLedger() {
-      const list=document.getElementById('company-ledger-list'); if(!list) return;
-      const rows=state.companyLedger||[]; const income=rows.filter(x=>x.type==='income').reduce((a,x)=>a+Number(x.amount||0),0); const expense=rows.filter(x=>x.type==='expense').reduce((a,x)=>a+Number(x.amount||0),0);
-      document.getElementById('company-ledger-income').textContent=`₹${income.toLocaleString('en-IN')}`; document.getElementById('company-ledger-expense').textContent=`₹${expense.toLocaleString('en-IN')}`; document.getElementById('company-ledger-balance').textContent=`₹${(income-expense).toLocaleString('en-IN')}`;
-      list.innerHTML=rows.slice().reverse().map(x=>`<div class="flex justify-between gap-2 bg-slate-900 rounded-lg p-2 text-xs"><div><b>${x.category||'अन्य'}</b><small class="block text-slate-400">${new Date(x.date).toLocaleDateString('en-IN')} · ${x.note||''}</small></div><b class="${x.type==='income'?'text-emerald-400':'text-rose-400'}">${x.type==='income'?'+':'−'}₹${Number(x.amount).toLocaleString('en-IN')}</b></div>`).join('')||'<p class="text-xs text-slate-500">अभी कोई एंट्री नहीं है।</p>';
-    }
+    function addCompanyLedgerEntry(e) { e.preventDefault(); if(!isOwner()&&!isManager())return showToast('कंपनी खाते का अधिकार नहीं है','fa-lock'); const amount=Number(document.getElementById('company-ledger-amount').value); if(!(amount>0))return showToast('रकम सही दर्ज करें'); (async()=>{try{const photo=await readKhataPhoto(document.getElementById('company-ledger-photo').files?.[0]);state.companyLedger=Array.isArray(state.companyLedger)?state.companyLedger:[];const d=document.getElementById('company-ledger-date').value;state.companyLedger.push({id:`co-ledger-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,type:document.getElementById('company-ledger-type').value,amount,mode:document.getElementById('company-ledger-mode').value,category:document.getElementById('company-ledger-category').value.trim(),note:document.getElementById('company-ledger-note').value.trim(),photo,date:d?new Date(d+'T12:00:00').toISOString():new Date().toISOString(),by:state.user?.name||'',deviceId:getSyncDeviceId()});e.target.reset();document.getElementById('company-ledger-date').value=new Date().toISOString().slice(0,10);document.getElementById('company-photo-preview').textContent='';saveAndSyncState();renderPurchasesView();showToast('कंपनी खाते की एंट्री सेव हुई');}catch(err){showToast(err.message||'फोटो/एंट्री सेव नहीं हुई','fa-triangle-exclamation');}})(); }
+    function renderCompanyLedger() { const dateInput=document.getElementById("company-ledger-date");if(dateInput&&!dateInput.value)dateInput.value=new Date().toISOString().slice(0,10); const list=document.getElementById('company-ledger-list');if(!list)return;const rows=state.companyLedger||[],filter=document.getElementById('company-ledger-filter')?.value||'all',q=(document.getElementById('company-ledger-search')?.value||'').toLowerCase().trim();const income=rows.filter(x=>x.type==='income').reduce((a,x)=>a+Number(x.amount||0),0),expense=rows.filter(x=>x.type==='expense').reduce((a,x)=>a+Number(x.amount||0),0);document.getElementById('company-ledger-income').textContent=`₹${income.toLocaleString('en-IN')}`;document.getElementById('company-ledger-expense').textContent=`₹${expense.toLocaleString('en-IN')}`;document.getElementById('company-ledger-balance').textContent=`₹${(income-expense).toLocaleString('en-IN')}`;const display=rows.slice().reverse().filter(x=>(filter==='all'||x.type===filter)&&(!q||[x.category,x.note,x.mode,x.by].join(' ').toLowerCase().includes(q)));list.innerHTML=display.map(x=>`<div class="flex justify-between gap-2 bg-slate-900 rounded-lg p-2 text-xs"><div><b>${x.category||'अन्य'}</b><small class="block text-slate-400">${new Date(x.date).toLocaleDateString('en-IN')} · ${x.mode||''} · ${x.note||''}</small>${x.photo?`<a href="${x.photo}" target="_blank" class="text-sky-300 underline">📷 फोटो देखें</a>`:''}<small class="block text-slate-500">दर्जकर्ता: ${x.by||'—'}</small></div><b class="${x.type==='income'?'text-emerald-400':'text-rose-400'}">${x.type==='income'?'+':'−'}₹${Number(x.amount).toLocaleString('en-IN')}</b></div>`).join('')||'<p class="text-xs text-slate-500">फिल्टर के अनुसार कोई एंट्री नहीं।</p>'; }
+    function exportCompanyLedgerCSV(){const rows=[['Date','Type','Category','Amount','Mode','Note','By']];(state.companyLedger||[]).slice().sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(x=>rows.push([new Date(x.date).toLocaleDateString('en-IN'),x.type,x.category,x.amount,x.mode,x.note,x.by]));const csv='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='UJJWALJI_Company_Ledger.csv';a.click();URL.revokeObjectURL(a.href);}
     function addCompanyLicenseRow(item={type:'',number:''}) {
       const box=document.getElementById('company-licenses-list'); if(!box) return;
       const row=document.createElement('div'); row.className='grid grid-cols-[1fr_1fr_auto] gap-2';
